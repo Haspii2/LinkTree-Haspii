@@ -1,6 +1,8 @@
 # HASPII — Bio Page
 
-Page bio premium style guns.lol : fond vidéo plein écran, carte en verre dépoli avec bannière vidéo fondue dans la carte, écran "click to enter", stats Discord live.
+Page bio premium style guns.lol : fond vidéo plein écran, carte en verre dépoli avec bannière vidéo fondue dans la carte, écran "click to enter", badges, stats Discord live.
+
+Effets : nom décodé façon terminal puis portail qui s'ouvre depuis le clic, carte inclinable en 3D (souris, ou gyroscope sur Android) avec parallaxe des vidéos et liseré lumineux qui suit le curseur, comète de lumière autour de l'avatar, reflet chromé sur le nom, poussière de lumière, étincelles au curseur et au clic. Tout se désactive automatiquement si le système demande de réduire les animations.
 
 **Stack : un seul fichier `index.html`** (HTML/CSS/JS vanilla, zéro build, zéro dépendance).
 
@@ -12,11 +14,13 @@ Tout se règle dans le bloc `CONFIG` en haut du `<script>` dans [index.html](ind
 |---|---|
 | `name`, `handle` | Pseudo affiché (carte + intro + titre d'onglet) |
 | `typewriter` | Phrases de la machine à écrire |
+| `badges` | Badges à côté du nom : `{ icon, label }` (icônes : `crown`, `code`, `pen`, `star`, `bolt`, `verified`), `[]` pour aucun |
 | `backgroundVideo`, `bannerVideo`, `avatarVideo` | URLs des vidéos (Cloudinary ou lien direct .mp4). `bannerVideo: ""` pour une carte sans bannière |
 | `overlay` | Pluie de billets au-dessus de la carte : `src` (vidéo locale), `keyColor` (couleur rendue transparente), `tolerance`/`softness` (réglage du keying). `src: ""` pour désactiver |
 | `discord` | Code d'invitation (stats live), nom, logo, valeurs de secours |
 | `socials` | Liste des réseaux — types dispo : `discord`, `telegram`, `github`, `tiktok`, `instagram`, `youtube`, `x`, `mail`, `monero` |
 | `viewsBase` | Base du compteur de vues (incrément local par visiteur) |
+| `particles` | `true`/`false` — poussière de lumière devant le fond |
 | `frontProtections` | `true`/`false` — blocage clic droit / F12 / copie |
 
 Chaque entrée de `socials` accepte soit `url` (ouvre le lien), soit `copy` (copie la valeur dans le presse-papier au clic, avec infobulle "copié ✓") :

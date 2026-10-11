@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>VYNTI — motion design</title>
+<style>
+  :root {
+    --ink: #111112;
+    --ink2: #2a2c31;
+    --muted: #6b6f76;
+    --faint: #a1a4ab;
+    --line: rgba(17, 17, 18, .08);
+    --green: #16835a;
+    --green-soft: #e3f5ec;
+    --display: "Inter Display", "Inter", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #fff; overflow: hidden; }
+  body { width: 1920px; height: 1080px; }
+
+  #stage {
+    position: relative; width: 1920px; height: 1080px; overflow: hidden;
+    background: #fff; color: var(--ink);
+    font-family: "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* ---------- fond ---------- */
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #bg .grid {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle at 1.5px 1.5px, rgba(17,17,18,.12) 1.25px, transparent 1.9px);
+    background-size: 36px 36px;
+    -webkit-mask-image: radial-gradient(ellipse 62% 62% at 50% 50%, #000 10%, transparent 100%);
+  }
+  #bg .blob { position: absolute; width: 1300px; height: 1300px; border-radius: 50%; left: 0; top: 0; }
+  #bg .b1 { background: radial-gradient(circle, rgba(22,131,90,.10), rgba(22,131,90,0) 62%); }
+  #bg .b2 { background: radial-gradient(circle, rgba(76,110,245,.07), rgba(76,110,245,0) 62%); }
+
+  /* ---------- scènes ---------- */
+  .scene { position: absolute; inset: 0; display: none; perspective: 2400px; perspective-origin: 50% 50%; }
+  .abs { position: absolute; left: 0; top: 0; }
+
+  /* mots révélés */
+  .w { display: inline-block; overflow: hidden; vertical-align: top; padding: .08em .02em .16em; margin: -.08em -.02em -.16em; }
+  .wi { display: inline-block; will-change: transform; }
+
+  /* fenêtres (captures) */
+  .win {
+    position: absolute; left: 0; top: 0; width: 1440px; height: 900px;
+    border-radius: 16px; overflow: hidden; background: #fff;
+    transform-origin: 50% 50%;
+    box-shadow:
+      0 0 0 1px rgba(17,17,18,.07),
+      0 2px 4px rgba(17,17,18,.04),
+      0 24px 48px -12px rgba(17,17,18,.16),
+      0 70px 140px -30px rgba(17,17,18,.22);
+  }
+  .win img { display: block; width: 100%; }
+  .win .dim { position: absolute; inset: 0; background: #fff; opacity: 0; }
+  .win.modal { width: 1198px; height: 758px; border-radius: 18px; }
+
+  /* bloc texte des fonctionnalités */
+  .copy { position: absolute; width: 600px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 10px; height: 42px; padding: 0 18px 0 14px;
+    border-radius: 999px; background: #fff; border: 1px solid var(--line);
+    box-shadow: 0 1px 2px rgba(17,17,18,.04), 0 6px 16px -6px rgba(17,17,18,.10);
+    font-size: 17px; font-weight: 500; color: var(--ink2); letter-spacing: -.005em;
+  }
+  .chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px rgba(22,131,90,.14); }
+  .chip .num { color: var(--faint); font-variant-numeric: tabular-nums; }
+  .chip .sep { width: 1px; height: 16px; background: var(--line); }
+  .copy h2 {
+    font-family: var(--display); font-weight: 600; font-size: 78px; line-height: 1.02;
+    letter-spacing: -.04em; margin: 26px 0 24px;
+  }
+  .copy p { margin: 0; font-size: 25px; line-height: 1.5; color: var(--muted); letter-spacing: -.01em; }
+
+  .muted { color: var(--faint); }
+  .hl { color: var(--green); position: relative; }
+
+  /* cartes UI recréées */
+  .card {
+    position: absolute; background: #fff; border-radius: 22px;
+    box-shadow:
+      0 0 0 1px rgba(17,17,18,.06),
+      0 2px 6px rgba(17,17,18,.04),
+      0 30px 60px -18px rgba(17,17,18,.18),
+      0 80px 160px -40px rgba(17,17,18,.20);
+  }
+  .cap { font-size: 15px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+
+  .tg { position: relative; width: 50px; height: 28px; border-radius: 14px; background: #e2e3e6; flex: none; }
+  .tg i { position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.22); }
+
+  /* toasts */
+  .toast {
+    position: absolute; left: 1300px; top: 0; width: 500px; padding: 16px 20px 16px 16px;
+    display: flex; align-items: center; gap: 16px; background: #fff; border-radius: 18px;
+    box-shadow: 0 0 0 1px rgba(17,17,18,.07), 0 18px 40px -12px rgba(17,17,18,.22);
+  }
+  .toast img { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; flex: none; }
+  .toast .tx { flex: 1; min-width: 0; }
+  .toast .lab { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--green); }
+  .toast .lab .live { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px rgba(22,131,90,.15); }
+  .toast .lab .ago { margin-left: auto; color: var(--faint); font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 14px; }
+  .toast .ti { font-size: 19px; font-weight: 600; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -.01em; }
+  .toast .me { font-size: 15px; color: var(--muted); margin-top: 3px; display: flex; justify-content: space-between; }
+  .toast .me b { color: var(--ink); font-weight: 600; font-size: 17px; }
+
+  /* flux d'annonces (scène d'accroche) */
+  .fcol { position: absolute; top: 0; width: 360px; }
+  .fcard {
+    height: 84px; margin-bottom: 16px; padding: 14px; display: flex; align-items: center; gap: 14px;
+    background: #fff; border-radius: 16px; box-shadow: 0 0 0 1px rgba(17,17,18,.06), 0 8px 20px -10px rgba(17,17,18,.16);
+  }
+  .fcard img { width: 56px; height: 56px; border-radius: 10px; flex: none; }
+  .fcard .tx { flex: 1; min-width: 0; }
+  .fcard .ti { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fcard .me { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+  .fcard b { font-size: 16px; font-weight: 600; }
+
+  /* curseur */
+  #cursor { position: absolute; left: 0; top: 0; z-index: 50; opacity: 0; filter: drop-shadow(0 6px 10px rgba(0,0,0,.22)); }
+  #cursor svg { display: block; transform-origin: 5px 3px; }
+  .ripple { position: absolute; left: 0; top: 0; width: 70px; height: 70px; margin: -35px 0 0 -35px; border-radius: 50%; border: 2.5px solid var(--green); opacity: 0; z-index: 49; }
+
+  /* logo */
+  .mark polygon { fill: var(--ink); transform-box: fill-box; transform-origin: 50% 50%; }
+  .wordmark { font-family: var(--display); font-weight: 700; letter-spacing: .1em; line-height: 1; }
+  .ring { position: absolute; left: 960px; top: 540px; width: 300px; height: 300px; margin: -150px 0 0 -150px; border-radius: 50%; border: 2px solid rgba(22,131,90,.35); opacity: 0; }
+
+  /* ---- scène 2 : bénéfice ---- */
+  #pc { left: 1010px; top: 420px; width: 760px; padding: 34px 40px 30px; }
+  #pc .hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  #pc .hd span:last-child { font-size: 16px; color: var(--faint); }
+  #pc .row { display: flex; justify-content: space-between; font-size: 24px; color: var(--ink2); padding: 15px 0; border-bottom: 1px solid var(--line); }
+  #pc .row b { font-weight: 500; font-variant-numeric: tabular-nums; }
+  #pc .tot { display: flex; justify-content: space-between; align-items: center; padding-top: 22px; }
+  #pc .tot span { font-size: 24px; font-weight: 600; }
+  #pc .tot b { font-family: var(--display); font-size: 60px; font-weight: 600; color: var(--green); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .hlbox { position: absolute; border: 4px solid var(--green); border-radius: 14px; box-shadow: 0 0 0 8px rgba(22,131,90,.14); opacity: 0; }
+
+  /* ---- scène 3 : filtres ---- */
+  #fc { left: 210px; top: 372px; width: 1500px; overflow: hidden; }
+  #fc .top { height: 76px; display: flex; align-items: center; padding: 0 32px; gap: 16px; border-bottom: 1px solid var(--line); }
+  #fc .top h4 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -.01em; }
+  #fc .pill { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border-radius: 999px; background: #f3f4f6; font-size: 15px; font-weight: 500; color: var(--muted); }
+  #fc .pill i { width: 8px; height: 8px; border-radius: 50%; background: #c4c6cb; }
+  #fc .btn { margin-left: auto; height: 42px; padding: 0 18px; border-radius: 10px; background: var(--ink); color: #fff; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  #fc .th, #fc .tr { display: grid; grid-template-columns: 110px 470px 1fr 120px 150px; align-items: center; padding: 0 32px; }
+  #fc .th { height: 54px; background: #f7f7f8; font-size: 13.5px; font-weight: 600; letter-spacing: .08em; color: var(--faint); }
+  #fc .th .r, #fc .tr .r { text-align: right; }
+  #fc .tr { height: 104px; border-top: 1px solid var(--line); }
+  #fc .tr .nm { font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
+  #fc .tr .cr { display: flex; gap: 10px; }
+  #fc .tr .pr { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #fc .tr .ls { font-size: 18px; color: var(--muted); }
+  .ch { display: inline-flex; align-items: center; height: 36px; padding: 0 13px; border-radius: 8px; font-size: 17px; font-weight: 500; border: 1px solid; white-space: nowrap; }
+  .ch.b { background: #e6effc; border-color: #bacfef; color: #1f5fbf; }
+  .ch.p { background: #efeafc; border-color: #d1c6f0; color: #6746c4; }
+  .ch.g { background: #e3f5ec; border-color: #b4dacb; color: #0e7a50; }
+  .ch.r { background: #fce8e8; border-color: #f2c4c3; color: #b8322f; }
+
+  /* ---- scène 4 : réglages ---- */
+  #sc { left: 1050px; top: 236px; width: 740px; padding: 26px 30px 26px; }
+  #sc .sec { margin: 4px 0 10px; }
+  #sc .sec + .it { margin-top: 0; }
+  #sc .it { display: flex; align-items: center; gap: 18px; padding: 18px 18px; border-radius: 16px; border: 1px solid var(--line); background: #fbfbfc; margin-bottom: 12px; }
+  #sc .ic { width: 48px; height: 48px; border-radius: 12px; background: #fff; border: 1px solid var(--line); display: grid; place-items: center; flex: none; color: var(--ink2); }
+  #sc .tx { flex: 1; }
+  #sc .tx b { display: block; font-size: 21px; font-weight: 600; letter-spacing: -.01em; }
+  #sc .tx span { display: block; font-size: 16px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+  #sc .inp { width: 150px; height: 48px; border-radius: 12px; border: 1px solid #dcdde0; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #sc .inp em { font-style: normal; color: var(--faint); font-weight: 500; }
+  #sc .note { margin-top: 16px; display: flex; gap: 12px; align-items: center; font-size: 17px; color: var(--green); font-weight: 500; }
+  #sc .note .ok { width: 26px; height: 26px; border-radius: 50%; background: var(--green); display: grid; place-items: center; flex: none; }
+
+  /* ---- scène 5 : négociation ---- */
+  .flow { position: absolute; left: 0; top: 118px; width: 1920px; display: flex; justify-content: center; align-items: center; gap: 0; }
+  .fpill { display: inline-flex; align-items: center; gap: 12px; height: 60px; padding: 0 24px 0 14px; background: #fff; border-radius: 999px; font-size: 20px; font-weight: 600; box-shadow: 0 0 0 1px rgba(17,17,18,.07), 0 14px 30px -12px rgba(17,17,18,.2); }
+  .fpill .ib { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: #f2f3f5; color: var(--ink2); }
+  .fpill.ai .ib { background: var(--green-soft); color: var(--green); }
+  .arrow { width: 90px; height: 24px; display: block; }
+  #chat { left: 540px; top: 230px; width: 840px; padding: 0; overflow: hidden; }
+  #chat .hd { display: flex; align-items: center; gap: 16px; padding: 22px 28px; border-bottom: 1px solid var(--line); }
+  #chat .hd img { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; }
+  #chat .hd .t1 { font-size: 21px; font-weight: 600; }
+  #chat .hd .t2 { font-size: 16px; color: var(--muted); margin-top: 3px; }
+  #chat .hd .pr { margin-left: auto; font-size: 22px; font-weight: 600; }
+  #chat .body { padding: 26px 28px 30px; height: 470px; position: relative; background: #fcfcfd; }
+  .msg { position: absolute; max-width: 560px; }
+  .msg .who { font-size: 14px; font-weight: 600; color: var(--faint); margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
+  .msg .bub { padding: 16px 20px; border-radius: 20px; font-size: 20px; line-height: 1.45; }
+  .msg.me { right: 28px; }
+  .msg.me .who { justify-content: flex-end; color: var(--green); }
+  .msg.me .bub { background: var(--ink); color: #fff; border-bottom-right-radius: 6px; }
+  .msg.them .bub { background: #eef0f2; color: var(--ink); border-bottom-left-radius: 6px; }
+  .msg .bub mark { background: rgba(61,220,151,.22); color: #b9f5d8; border-radius: 6px; padding: 0 3px; }
+  .caret { display: inline-block; width: 2px; height: 22px; background: #fff; vertical-align: -4px; margin-left: 2px; }
+  .offer { position: absolute; right: 28px; display: inline-flex; align-items: center; gap: 8px; font-size: 15px; color: var(--muted); }
+  .dots { display: inline-flex; gap: 6px; padding: 18px 20px; background: #eef0f2; border-radius: 20px; border-bottom-left-radius: 6px; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; background: #9ea2a9; }
+  .acc { position: absolute; left: 50%; display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 20px 0 12px; border-radius: 999px; background: var(--green); color: #fff; font-size: 18px; font-weight: 600; box-shadow: 0 12px 30px -10px rgba(22,131,90,.55); white-space: nowrap; }
+  .acc .ok { width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,.22); display: grid; place-items: center; }
+
+  /* ---- scène 6 : statistiques ---- */
+  .kpi { position: absolute; top: 170px; width: 380px; height: 160px; padding: 26px 28px; }
+  .kpi .lb { font-size: 17px; color: var(--muted); font-weight: 500; }
+  .kpi .v { font-family: var(--display); font-size: 54px; font-weight: 600; letter-spacing: -.035em; margin-top: 10px; font-variant-numeric: tabular-nums; }
+  .kpi .sb { font-size: 15px; color: var(--faint); margin-top: 6px; }
+  #chart { left: 160px; top: 362px; width: 1600px; height: 560px; padding: 30px 40px; }
+  #chart .hd { display: flex; justify-content: space-between; align-items: baseline; }
+  #chart .hd b { font-size: 24px; font-weight: 600; letter-spacing: -.01em; }
+  #chart .hd span { font-size: 17px; color: var(--muted); }
+  #bars { position: absolute; left: 40px; right: 40px; bottom: 64px; height: 360px; }
+  #bars .gl { position: absolute; left: 0; right: 0; height: 1px; background: var(--line); }
+  #bars .gl span { position: absolute; left: 0; top: -22px; font-size: 14px; color: var(--faint); }
+  .bar { position: absolute; bottom: 0; width: 150px; border-radius: 12px 12px 4px 4px; background: #e7e8eb; transform-origin: 50% 100%; }
+  .bar.best { background: var(--green); }
+  .bar .val { position: absolute; left: 0; right: 0; top: -38px; text-align: center; font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bar .mo { position: absolute; left: 0; right: 0; bottom: -40px; text-align: center; font-size: 17px; color: var(--muted); }
+
+  /* ---- scène 7 : mur ---- */
+  #wall { position: absolute; left: 50%; top: 50%; width: 3060px; height: 2000px; margin: -1000px 0 0 -1530px; }
+  .wcol { position: absolute; top: 0; width: 576px; }
+  .tile { width: 576px; height: 360px; margin-bottom: 36px; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 0 0 1px rgba(17,17,18,.07), 0 24px 50px -16px rgba(17,17,18,.25); }
+  .tile img { width: 100%; display: block; }
+  #wallveil { position: absolute; inset: 0; background: radial-gradient(ellipse 46% 40% at 50% 50%, rgba(255,255,255,.97) 0%, rgba(255,255,255,.88) 55%, rgba(255,255,255,.12) 100%); }
+  .fchip { position: absolute; display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 22px 0 14px; background: #fff; border-radius: 999px; font-size: 19px; font-weight: 600; box-shadow: 0 0 0 1px rgba(17,17,18,.07), 0 14px 30px -12px rgba(17,17,18,.22); white-space: nowrap; }
+  .fchip .ib { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--green-soft); color: var(--green); }
+
+  svg.i { display: block; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"><div class="blob b1"></div><div class="blob b2"></div><div class="grid"></div></div>
+
+  <!-- ============ S0 : intro logo ============ -->
+  <div class="scene" id="s0">
+    <div class="ring" id="s0r1"></div><div class="ring" id="s0r2"></div>
+    <div class="abs" id="s0g" style="width:1920px;height:1080px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div id="s0row" style="display:flex;align-items:center;gap:34px;">
+        <div class="markHost" data-size="128"></div>
+        <div class="wordmark" id="s0word" style="font-size:112px;">VYNTI</div>
+      </div>
+      <div id="s0tag" style="margin-top:44px;font-size:32px;font-weight:500;color:var(--muted);letter-spacing:-.01em;">Le bot Vinted taillé pour les revendeurs.</div>
+    </div>
+  </div>
+
+  <!-- ============ S1 : accroche ============ -->
+  <div class="scene" id="s1">
+    <div class="abs" id="s1flow" style="width:1920px;height:1080px;"></div>
+    <div class="abs" id="s1veil" style="width:1920px;height:1080px;background:radial-gradient(ellipse 58% 56% at 50% 50%, #fff 0%, rgba(255,255,255,.96) 50%, rgba(255,255,255,.7) 80%, rgba(255,255,255,.5) 100%);"></div>
+    <div class="abs" style="width:1920px;top:395px;text-align:center;font-family:var(--display);font-weight:600;font-size:88px;line-height:1.08;letter-spacing:-.04em;">
+      <div id="s1a">Sur Vinted, les meilleures affaires</div>
+      <div id="s1b">partent en <span class="muted">quelques secondes.</span></div>
+    </div>
+    <div class="abs" style="width:1920px;top:345px;text-align:center;font-family:var(--display);font-weight:600;font-size:132px;line-height:1.04;letter-spacing:-.045em;">
+      <div id="s1c">VYNTI les voit</div>
+      <div id="s1d"><span class="hl" id="s1hl">en premier.<svg id="s1u" viewBox="0 0 600 40" preserveAspectRatio="none" style="position:absolute;left:-1%;bottom:-30px;width:102%;height:34px;overflow:visible"><path d="M6 26 C 140 8, 300 6, 594 18" fill="none" stroke="#16835a" stroke-width="9" stroke-linecap="round" opacity=".9"/></svg></span></div>
+    </div>
+  </div>
+
+  <!-- ============ S2 : fil d'actualité ============ -->
+  <div class="scene" id="s2">
+    <div class="win" id="w2"><img src="assets/feed.png" /><div class="hlbox" id="w2hl" style="left:1031px;top:704px;width:390px;height:128px;"></div></div>
+    <div class="copy" id="c2" style="left:140px;top:350px;">
+      <div class="chip"><span class="dot"></span><span class="num">01</span><span class="sep"></span>Surveiller</div>
+      <h2>Chaque annonce, à&nbsp;la&nbsp;seconde.</h2>
+      <p>Le fil d’actualité affiche en direct tout ce qui correspond à vos filtres, avec le bénéfice estimé.</p>
+    </div>
+    <div class="toast" id="t2a"><img src="assets/thumb0.png"/><div class="tx"><div class="lab"><span class="live"></span>Nouvelle annonce<span class="ago">à l’instant</span></div><div class="ti">Gilet polaire pour femme</div><div class="me"><span>Patagonia · L · Bon état</span><b>12,00 €</b></div></div></div>
+    <div class="toast" id="t2b"><img src="assets/thumb6.png"/><div class="tx"><div class="lab"><span class="live"></span>Nouvelle annonce<span class="ago">à l’instant</span></div><div class="ti">Patagonia Black Fleece Body Warmer</div><div class="me"><span>Patagonia · M</span><b>22,00 €</b></div></div></div>
+    <div class="toast" id="t2c"><img src="assets/thumb4.png"/><div class="tx"><div class="lab"><span class="live"></span>Nouvelle annonce<span class="ago">à l’instant</span></div><div class="ti">Polaire sans manches Patagonia blanche</div><div class="me"><span>Patagonia · M</span><b>25,00 €</b></div></div></div>
+    <div class="abs" id="pcap" style="left:1010px;top:226px;font-family:var(--display);font-weight:600;font-size:58px;line-height:1.05;letter-spacing:-.04em;">Le bénéfice estimé,<br><span class="muted">avant même d’acheter.</span></div>
+    <div class="card" id="pc">
+      <div class="hd"><span class="cap">Bénéfice potentiel</span><span>Estimation moyenne · 4 ventes</span></div>
+      <div class="row"><span>Revente estimée · Patagonia</span><b>117,00 €</b></div>
+      <div class="row"><span>Frais retenus (0,3 %)</span><b>−0,31 €</b></div>
+      <div class="row"><span>Prix de l’annonce</span><b>−13,30 €</b></div>
+      <div class="tot"><span>Bénéfice potentiel</span><b id="pcv">+103,39 €</b></div>
+    </div>
+  </div>
+
+  <!-- ============ S3 : filtres ============ -->
+  <div class="scene" id="s3">
+    <div class="win" id="w3"><img src="assets/filtres.png" /><div class="dim"></div></div>
+    <div class="copy" id="c3" style="left:1250px;top:350px;width:560px;">
+      <div class="chip"><span class="dot"></span><span class="num">02</span><span class="sep"></span>Cibler</div>
+      <h2>Des filtres chirurgicaux.</h2>
+      <p>Marque, mots-clés, catégorie, prix, pays. Importez, exportez ou créez un filtre depuis une URL.</p>
+    </div>
+    <div class="card" id="fc">
+      <div class="top"><h4>Filtres</h4><span class="pill" id="fcpill"><i></i><span>0 filtre armé</span></span>
+        <div class="btn"><svg class="i" width="18" height="18" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nouveau</div></div>
+      <div class="th"><span>ÉTAT</span><span>NOM</span><span>CRITÈRES</span><span class="r">PRISES</span><span class="r">DERNIÈRE</span></div>
+      <div class="tr" id="fr1"><span><div class="tg" id="tg1"><i></i></div></span><span class="nm">Veste patagonia ≤ 15 EUR · FR</span>
+        <span class="cr"><span class="ch b">FR</span><span class="ch g">« Veste patagonia »</span><span class="ch r">≤ 15 €</span></span>
+        <span class="r pr" id="pr1">65</span><span class="r ls">44 min</span></div>
+      <div class="tr" id="fr2"><span><div class="tg" id="tg2"><i></i></div></span><span class="nm">Patagonia · Manteaux homme</span>
+        <span class="cr"><span class="ch b">FR</span><span class="ch p">Patagonia</span><span class="ch p">Manteaux et vestes</span><span class="ch r">10 € – 25 €</span></span>
+        <span class="r pr" id="pr2">49</span><span class="r ls">57 min</span></div>
+    </div>
+  </div>
+
+  <!-- ============ S4 : achat auto ============ -->
+  <div class="scene" id="s4">
+    <div class="win modal" id="w4"><img src="assets/prefs-achat.png" /><div class="dim"></div></div>
+    <div class="copy" id="c4" style="left:140px;top:350px;">
+      <div class="chip"><span class="dot"></span><span class="num">03</span><span class="sep"></span>Acheter</div>
+      <h2>L’achat auto, sous&nbsp;contrôle.</h2>
+      <p>Séquentiel ou parallèle, quarantaine automatique, anti-republication et plafond par achat.</p>
+    </div>
+    <div class="card" id="sc">
+      <div class="cap sec">Sécurité</div>
+      <div class="it" id="si1"><div class="ic"><svg class="i" width="24" height="24" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></div>
+        <div class="tx"><b>Quarantaine automatique</b><span>Un compte en échec est écarté du pool, jusqu’à 6 h.</span></div><div class="tg" id="tg3"><i></i></div></div>
+      <div class="it" id="si2"><div class="ic"><svg class="i" width="24" height="24" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></div>
+        <div class="tx"><b>Protection anti-republication</b><span>Compare vendeur, titre et prix : jamais deux fois.</span></div><div class="tg" id="tg4"><i></i></div></div>
+      <div class="cap sec" style="margin-top:22px;">Paiement automatique</div>
+      <div class="it" id="si3"><div class="ic"><svg class="i" width="24" height="24" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+        <div class="tx"><b>Finaliser l’achat sans intervention</b><span>Le bot clique « Payer » lui-même.</span></div><div class="tg" id="tg5"><i></i></div></div>
+      <div class="it" id="si4"><div class="ic"><svg class="i" width="24" height="24" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></div>
+        <div class="tx"><b>Plafond par achat</b><span>Frais de port et protection compris.</span></div><div class="inp" id="inp"><span>25,00</span><em>€</em></div></div>
+      <div class="note" id="scnote"><span class="ok"><svg class="i" width="16" height="16" viewBox="0 0 24 24" style="color:#fff;stroke-width:3"><path d="M20 6 9 17l-5-5"/></svg></span>Achat finalisé tout seul — jamais au-delà du plafond.</div>
+    </div>
+  </div>
+
+  <!-- ============ S5 : négociation IA ============ -->
+  <div class="scene" id="s5">
+    <div class="win" id="w5"><img src="assets/agent.png" /><div class="dim"></div></div>
+    <div class="copy" id="c5" style="left:1250px;top:350px;width:560px;">
+      <div class="chip"><span class="dot"></span><span class="num">04</span><span class="sep"></span>Négocier</div>
+      <h2>L’IA négocie pour&nbsp;vous.</h2>
+      <p>L’agent lit la conversation, fait des offres et reste dans vos limites : jamais sous 80&nbsp;% du prix.</p>
+    </div>
+    <div class="flow" id="flow">
+      <div class="fpill" id="fp1"><span class="ib"><svg class="i" width="20" height="20" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span>Favori reçu</div>
+      <svg class="arrow" id="ar1" viewBox="0 0 90 24"><path d="M10 12 H76 M68 5 L77 12 L68 19" fill="none" stroke="#b9bcc2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="fpill ai" id="fp2"><span class="ib"><svg class="i" width="20" height="20" viewBox="0 0 24 24"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span>Proposer −15 %</div>
+      <svg class="arrow" id="ar2" viewBox="0 0 90 24"><path d="M10 12 H76 M68 5 L77 12 L68 19" fill="none" stroke="#b9bcc2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="fpill" id="fp3"><span class="ib"><svg class="i" width="20" height="20" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>Me prévenir</div>
+    </div>
+    <div class="card" id="chat">
+      <div class="hd"><img src="assets/detail.png"/><div><div class="t1">Gilet polaire pour femme</div><div class="t2">Patagonia · L · Bon état</div></div><div class="pr">12,00 €</div></div>
+      <div class="body">
+        <div class="msg me" id="m1" style="top:26px;"><div class="who"><svg class="i" width="16" height="16" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>Agent IA</div><div class="bub" id="m1b"></div></div>
+        <div class="offer" id="m1o" style="top:192px;"><svg class="i" width="16" height="16" viewBox="0 0 24 24" style="color:var(--green)"><path d="M20 6 9 17l-5-5"/></svg>Offre envoyée · 10,20 € (−15 %)</div>
+        <div class="msg them" id="m2d" style="top:246px;left:28px;"><div class="dots"><i></i><i></i><i></i></div></div>
+        <div class="msg them" id="m2" style="top:246px;left:28px;"><div class="who">Vendeur</div><div class="bub">Ça me va, c’est d’accord !</div></div>
+        <div class="acc" id="acc" style="top:392px;"><span class="ok"><svg class="i" width="16" height="16" viewBox="0 0 24 24" style="stroke-width:3"><path d="M20 6 9 17l-5-5"/></svg></span>Offre acceptée · 10,20 €</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ S6 : statistiques ============ -->
+  <div class="scene" id="s6">
+    <div class="win" id="w6"><img id="w6img" src="assets/stats.png" /><div class="dim"></div></div>
+    <div class="copy" id="c6" style="left:140px;top:350px;">
+      <div class="chip"><span class="dot"></span><span class="num">05</span><span class="sep"></span>Piloter</div>
+      <h2>Vos chiffres, enfin&nbsp;clairs.</h2>
+      <p>Chiffre d’affaires, bénéfice net, marge, délai de revente. Par jour, par marque, par mois.</p>
+    </div>
+    <div id="dash">
+      <div class="card kpi" id="k1" style="left:160px;"><div class="lb">Chiffre d’affaires</div><div class="v" id="k1v">7 853 €</div><div class="sb">80 ventes</div></div>
+      <div class="card kpi" id="k2" style="left:566px;"><div class="lb">Bénéfice net</div><div class="v" id="k2v" style="color:var(--green)">2 567 €</div><div class="sb">frais et achats déduits</div></div>
+      <div class="card kpi" id="k3" style="left:972px;"><div class="lb">Marge nette</div><div class="v" id="k3v">32,7 %</div><div class="sb">sur l’ensemble des ventes</div></div>
+      <div class="card kpi" id="k4" style="left:1378px;"><div class="lb">Investi</div><div class="v" id="k4v">5 869 €</div><div class="sb">97 achats</div></div>
+      <div class="card" id="chart">
+        <div class="hd"><b>Bénéfice net par mois</b><span>Rapport mensuel · avril → septembre 2026</span></div>
+        <div id="bars"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ S7 : mur de fonctionnalités ============ -->
+  <div class="scene" id="s7" style="perspective:3200px;">
+    <div id="wall"></div>
+    <div id="wallveil"></div>
+    <div class="abs" style="width:1920px;top:330px;text-align:center;font-family:var(--display);font-weight:600;font-size:104px;line-height:1.04;letter-spacing:-.045em;">
+      <div id="s7a">Tout votre business Vinted.</div>
+      <div id="s7b"><span class="muted">Une seule app.</span></div>
+    </div>
+    <div id="fchips"></div>
+  </div>
+
+  <!-- ============ S8 : outro ============ -->
+  <div class="scene" id="s8">
+    <div class="ring" id="s8r1"></div><div class="ring" id="s8r2"></div>
+    <div class="abs" id="s8g" style="width:1920px;height:1080px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div id="s8row" style="display:flex;align-items:center;gap:30px;">
+        <div class="markHost" data-size="104"></div>
+        <div class="wordmark" id="s8word" style="font-size:92px;">VYNTI</div>
+      </div>
+      <div id="s8tag" style="margin-top:46px;font-family:var(--display);font-size:60px;font-weight:600;letter-spacing:-.04em;">Achetez avant les autres.</div>
+      <div id="s8sub" style="margin-top:30px;display:flex;gap:12px;"></div>
+    </div>
+  </div>
+
+  <div id="ripples"></div>
+  <div id="cursor"><svg width="36" height="42" viewBox="0 0 36 42"><path d="M5 3 L5 32 L12.2 25.3 L17 36 L22 33.8 L17.3 23.4 L27 23.4 Z" fill="#111112" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg></div>
+</div>
+
+<script>
+/* =====================================================================
+   Moteur d'animation déterministe : renderFrame(t) fixe l'état exact
+   de chaque élément à l'instant t (secondes). Aucune animation CSS.
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (x, a = 0, b = 1) => (x < a ? a : x > b ? b : x);
+const lerp = (a, b, p) => a + (b - a) * p;
+const E = {
+  linear: t => t,
+  inCubic: t => t * t * t,
+  outCubic: t => 1 - Math.pow(1 - t, 3),
+  outQuart: t => 1 - Math.pow(1 - t, 4),
+  outQuint: t => 1 - Math.pow(1 - t, 5),
+  outExpo: t => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)),
+  inExpo: t => (t <= 0 ? 0 : Math.pow(2, 10 * t - 10)),
+  inOutCubic: t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+  inOutQuart: t => (t < .5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2),
+  inOutExpo: t => (t <= 0 ? 0 : t >= 1 ? 1 : t < .5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2),
+  outBack: t => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+  outBackSoft: t => { const c1 = 1.1, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+};
+const P = (t, s, d, e = E.outCubic) => e(clamp((t - s) / d));
+
+/* interpolation par images-clés : [[t, {props}, easing?], ...] */
+function kf(t, keys, ease = E.inOutCubic) {
+  if (t <= keys[0][0]) return { ...keys[0][1] };
+  for (let i = 0; i < keys.length - 1; i++) {
+    const [ta, a] = keys[i], [tb, b, e] = keys[i + 1];
+    if (t <= tb) {
+      const p = (e || ease)((t - ta) / (tb - ta));
+      const o = {};
+      for (const k in a) o[k] = lerp(a[k], b[k] ?? a[k], p);
+      return o;
+    }
+  }
+  return { ...keys[keys.length - 1][1] };
+}
+
+function setWin(el, v, W = 1440, H = 900) {
+  el.style.transform = `translate3d(${v.cx - W / 2}px,${v.cy - H / 2}px,0) rotateX(${v.rx || 0}deg) rotateY(${v.ry || 0}deg) scale(${v.s})`;
+  el.style.opacity = v.o ?? 1;
+}
+function tr(el, x = 0, y = 0, s = 1, o = 1, extra = '') {
+  el.style.transform = `translate3d(${x}px,${y}px,0) scale(${s}) ${extra}`;
+  el.style.opacity = o;
+}
+function blur(el, b) { el.style.filter = b > .05 ? `blur(${b.toFixed(2)}px)` : 'none'; }
+
+/* découpe un bloc texte en mots masqués */
+function split(el) {
+  const out = [];
+  const walk = node => {
+    [...node.childNodes].forEach(n => {
+      if (n.nodeType === 3) {
+        const frag = document.createDocumentFragment();
+        n.textContent.split(/([ \t\n\r]+)/).forEach(p => {
+          if (!p) return;
+          if (/^[ \t\n\r]+$/.test(p)) { frag.appendChild(document.createTextNode(' ')); return; }
+          const w = document.createElement('span'); w.className = 'w';
+          const i = document.createElement('span'); i.className = 'wi'; i.textContent = p;
+          w.appendChild(i); frag.appendChild(w); out.push(i);
+        });
+        n.replaceWith(frag);
+      } else if (n.nodeType === 1 && n.namespaceURI === 'http://www.w3.org/1999/xhtml' && n.tagName !== 'BR') {
+        walk(n);
+      }
+    });
+  };
+  walk(el);
+  return out;
+}
+function splitChars(el) {
+  const txt = el.textContent; el.textContent = '';
+  return [...txt].map(c => {
+    const w = document.createElement('span'); w.className = 'w';
+    const i = document.createElement('span'); i.className = 'wi'; i.textContent = c;
+    w.appendChild(i); el.appendChild(w); return i;
+  });
+}
+/* révélation mot à mot (entrée par le bas, sortie par le haut) */
+function words(list, t, start, o = {}) {
+  const { st = .055, dur = .9, out = null, ost = .025, odur = .5, rot = 0 } = o;
+  list.forEach((w, i) => {
+    const p = P(t, start + i * st, dur, E.outExpo);
+    let y = (1 - p) * 110, op = clamp(p * 1.6), r = (1 - p) * rot;
+    if (out !== null) { const q = P(t, out + i * ost, odur, E.inCubic); y -= q * 110; op *= 1 - q; }
+    w.style.transform = `translate3d(0,${y}%,0) rotate(${r}deg)`;
+    w.style.opacity = op;
+  });
+}
+function fadeUp(el, t, start, o = {}) {
+  const { dist = 36, dur = .9, out = null, odur = .45, odist = 40, s0 = 1 } = o;
+  const p = P(t, start, dur, E.outExpo);
+  let y = (1 - p) * dist, op = p, s = lerp(s0, 1, p);
+  if (out !== null) { const q = P(t, out, odur, E.inCubic); y -= q * odist; op *= 1 - q; }
+  tr(el, 0, y, s, op);
+}
+function pop(el, t, start, o = {}) {
+  const { dur = .6, out = null, odur = .35, from = .6, dy = 0 } = o;
+  const p = clamp((t - start) / dur);
+  const s = lerp(from, 1, E.outBack(p));
+  let op = clamp(p * 2.5), y = (1 - E.outCubic(p)) * dy;
+  if (out !== null) { const q = P(t, out, odur, E.inCubic); op *= 1 - q; y -= q * 20; }
+  tr(el, 0, y, s, op);
+}
+const mix = (a, b, p) => `rgb(${a.map((v, i) => Math.round(lerp(v, b[i], p))).join(',')})`;
+function toggle(el, p) {
+  el.style.background = mix([226, 227, 230], [22, 131, 90], p);
+  el.firstElementChild.style.transform = `translateX(${22 * p}px)`;
+}
+const nf2 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const nf0 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/* logo VYNTI (trois triangles) */
+const MARK = `<svg class="mark" viewBox="-2 -2 104 90" width="SIZE" height="SIZEH" style="overflow:visible;display:block">
+  <polygon points="0,0 40,0 31,40"/><polygon points="60,0 100,0 69,40"/><polygon points="25,48 75,48 50,86"/></svg>`;
+$$('.markHost').forEach(h => {
+  const s = +h.dataset.size;
+  h.innerHTML = MARK.replace('SIZE', s).replace('SIZEH', Math.round(s * 90 / 104));
+});
+
+/* ---------------------------------------------------------------- */
+const SC = {
+  s0: [0, 3.45], s1: [3.1, 7.55], s2: [7.3, 14.85], s3: [14.55, 20.85],
+  s4: [20.55, 27.25], s5: [26.95, 34.95], s6: [34.65, 42.15], s7: [41.8, 47.4], s8: [47.05, 52.1],
+};
+const DURATION = 52.1;
+const scenes = {};
+for (const id in SC) scenes[id] = $('#' + id);
+
+/* ---- références ---- */
+const R = {};
+function initRefs() {
+  // S0
+  R.s0word = splitChars($('#s0word'));
+  R.s0tag = split($('#s0tag'));
+  R.s0tris = $$('#s0 polygon');
+  R.s0wordW = $('#s0word').getBoundingClientRect().width;
+  // S1
+  R.s1a = split($('#s1a')); R.s1b = split($('#s1b'));
+  R.s1c = split($('#s1c')); R.s1d = split($('#s1d'));
+  R.s1u = $('#s1u path'); R.s1uLen = R.s1u.getTotalLength();
+  buildFlow();
+  // copies
+  for (const k of ['c2', 'c3', 'c4', 'c5', 'c6']) {
+    const c = $('#' + k);
+    R[k] = { chip: $('.chip', c), h: split($('h2', c)), p: $('p', c) };
+  }
+  // S2
+  R.pcap = split($('#pcap'));
+  R.pcRows = $$('#pc .row'); R.pcTot = $('#pc .tot'); R.pcHd = $('#pc .hd');
+  // S3
+  R.fcChips = $$('#fc .ch');
+  // S5
+  R.m1text = 'Bonjour, votre Gilet polaire pour femme m’intéresse. Seriez-vous d’accord pour 10,20 € ?';
+  // S6
+  buildBars();
+  // S7
+  buildWall(); buildChips();
+  R.s7a = split($('#s7a')); R.s7b = split($('#s7b'));
+  // S8
+  R.s8word = splitChars($('#s8word'));
+  R.s8tag = split($('#s8tag'));
+  R.s8tris = $$('#s8 polygon');
+  R.s8wordW = $('#s8word').getBoundingClientRect().width;
+  ['Sniper', 'AutoChat IA', 'Statistiques', 'Stock', 'Multi-comptes'].forEach(n => {
+    const d = document.createElement('div'); d.className = 'chip'; d.style.height = '46px'; d.style.fontSize = '19px';
+    d.innerHTML = `<span class="dot"></span>${n}`; $('#s8sub').appendChild(d);
+  });
+  R.s8chips = $$('#s8sub .chip');
+  // positions de clic (mise en page au repos)
+  R.pos = {};
+  for (const id of ['tg1', 'tg2', 'tg5']) R.pos[id] = centerOf($('#' + id));
+}
+function centerOf(el) {
+  let x = 0, y = 0, n = el;
+  while (n && n.id !== 'stage') { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+  return [x + el.offsetWidth / 2, y + el.offsetHeight / 2];
+}
+
+const ITEMS = [
+  ['Gilet polaire pour femme', 'Patagonia · L', '12,00 €', 0],
+  ['Polaire sans manches Patagonia blanche', 'Patagonia · M', '25,00 €', 4],
+  ['Fleecevest dames maat L', 'Patagonia · L', '14,00 €', 5],
+  ['Patagonia Black Fleece Body Warmer', 'Patagonia · M', '22,00 €', 6],
+  ['Polaire Patagonia taille M noir', 'Patagonia · M', '25,00 €', 7],
+  ['Gilet polaire pour femme', 'Patagonia · XL', '12,00 €', 1],
+  ['Polaire Patagonia bleu sans manche', 'Patagonia · L', '25,00 €', 8],
+  ['Chaleco acolchado negro ligero', 'Patagonia · M', '6,00 €', 9],
+  ['Polaire femme vert foncé 1/4 zip', 'Eddie Bauer · XL', '9,90 €', 10],
+  ['Gilet polaire pour femme', 'Patagonia · XL', '12,00 €', 2],
+];
+function buildFlow() {
+  const host = $('#s1flow');
+  R.fcols = [];
+  const xs = [-30, 370, 770, 1170, 1570];
+  xs.forEach((x, c) => {
+    const col = document.createElement('div'); col.className = 'fcol'; col.style.left = x + 'px';
+    let html = '';
+    for (let k = 0; k < 20; k++) {
+      const it = ITEMS[(k * 3 + c * 7) % ITEMS.length];
+      html += `<div class="fcard"><img src="assets/thumb${it[3]}.png"/><div class="tx"><div class="ti">${it[0]}</div><div class="me">${it[1]}</div></div><b>${it[2]}</b></div>`;
+    }
+    col.innerHTML = html; host.appendChild(col); R.fcols.push(col);
+  });
+}
+const MONTHS = [['Avril', 48.48], ['Mai', 405.69], ['Juin', 631.09], ['Juillet', 318.81], ['Août', 697.95], ['Septembre', 464.40]];
+function buildBars() {
+  const host = $('#bars');
+  [0, 200, 400, 600].forEach(v => {
+    const g = document.createElement('div'); g.className = 'gl'; g.style.bottom = (v / 750 * 360) + 'px';
+    g.innerHTML = `<span>${v} €</span>`; host.appendChild(g);
+  });
+  R.bars = MONTHS.map(([m, v], i) => {
+    const b = document.createElement('div'); b.className = 'bar' + (m === 'Août' ? ' best' : '');
+    b.style.left = (120 + i * 230) + 'px'; b.style.height = '0px';
+    b.innerHTML = `<div class="val">0 €</div><div class="mo">${m}</div>`;
+    host.appendChild(b); return { b, v, val: b.firstElementChild };
+  });
+}
+const WALL = ['feed', 'stats', 'agent', 'livraison', 'journal', 'filtres', 'rapports', 'prefs-achat', 'stock', 'autochat',
+  'comptes', 'messages', 'transactions', 'paiement', 'marques', 'apparence', 'automatisations'];
+function buildWall() {
+  const wall = $('#wall'); R.wcols = [];
+  for (let c = 0; c < 5; c++) {
+    const col = document.createElement('div'); col.className = 'wcol'; col.style.left = (c * 612) + 'px';
+    let html = '';
+    for (let k = 0; k < 15; k++) html += `<div class="tile"><img src="assets/wall-${WALL[(c * 4 + k * 3) % WALL.length]}.png"/></div>`;
+    col.innerHTML = html; wall.appendChild(col); R.wcols.push(col);
+  }
+}
+const FCHIPS = [
+  ['Multi-comptes', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0', 470, 650],
+  ['Stock & colis', 'M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8', 760, 650],
+  ['Journal en direct', 'M22 12h-4l-3 9L9 3l-3 9H2', 1040, 650],
+  ['Points relais', 'M20 10c0 5-8 12-8 12s-8-7-8-12a8 8 0 0 1 16 0zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6', 1340, 650],
+  ['Rapports & export', 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8', 640, 730],
+  ['Thème clair & sombre', 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z', 930, 730],
+  ['Notifications Discord', 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0', 1235, 730],
+];
+function buildChips() {
+  const host = $('#fchips');
+  R.fchips = FCHIPS.map(([n, d, x, y]) => {
+    const el = document.createElement('div'); el.className = 'fchip';
+    el.innerHTML = `<span class="ib"><svg class="i" width="17" height="17" viewBox="0 0 24 24"><path d="${d}"/></svg></span>${n}`;
+    host.appendChild(el); el.style.left = x + 'px'; el.style.top = y + 'px';
+    return el;
+  });
+}
+function centerChips() {
+  // centre chaque rangée de puces horizontalement (après mise en page)
+  [650, 730].forEach(y => {
+    const row = R.fchips.filter(c => parseInt(c.style.top) === y);
+    const gap = 14, W = row.reduce((a, c) => a + c.offsetWidth, 0) + gap * (row.length - 1);
+    let x = 960 - W / 2;
+    row.forEach(c => { c.style.left = x + 'px'; x += c.offsetWidth + gap; });
+  });
+}
+
+/* ---- curseur ---- */
+let CURSOR = [];
+function buildCursor() {
+  const [x1, y1] = R.pos.tg1, [x2, y2] = R.pos.tg2, [x5, y5] = R.pos.tg5;
+  const a = SC.s3[0], b = SC.s4[0];
+  CURSOR = [
+    { t0: a + 3.65, t1: a + 5.9, keys: [[a + 3.65, 1460, 1130], [a + 4.15, x1 + 4, y1 + 2], [a + 4.4, x1 + 4, y1 + 2], [a + 4.8, x2 + 4, y2 + 2], [a + 5.05, x2 + 4, y2 + 2], [a + 5.6, x2 + 150, y2 + 120]], clicks: [a + 4.22, a + 4.87] },
+    { t0: b + 3.7, t1: b + 6.3, keys: [[b + 3.7, 1500, 1140], [b + 4.35, x5 + 4, y5 + 2], [b + 4.7, x5 + 4, y5 + 2], [b + 5.3, x5 - 120, y5 + 180]], clicks: [b + 4.45] },
+  ];
+  R.ripples = [];
+  CURSOR.forEach(seg => seg.clicks.forEach(tc => {
+    const k = seg.keys.find(k => k[0] >= tc - .3 && k[0] <= tc + .3) || seg.keys[1];
+    const r = document.createElement('div'); r.className = 'ripple'; $('#ripples').appendChild(r);
+    R.ripples.push({ el: r, t: tc, x: k[1], y: k[2] });
+  }));
+}
+function renderCursor(t) {
+  const c = $('#cursor');
+  const seg = CURSOR.find(s => t >= s.t0 && t <= s.t1);
+  if (!seg) { c.style.opacity = 0; } else {
+    let x = seg.keys[0][1], y = seg.keys[0][2];
+    for (let i = 0; i < seg.keys.length - 1; i++) {
+      const [ta, xa, ya] = seg.keys[i], [tb, xb, yb] = seg.keys[i + 1];
+      if (t >= ta && t <= tb) { const p = E.inOutCubic((t - ta) / (tb - ta)); x = lerp(xa, xb, p); y = lerp(ya, yb, p); break; }
+      if (t > tb) { x = xb; y = yb; }
+    }
+    let press = 1;
+    seg.clicks.forEach(tc => { const d = t - tc; if (d > -.08 && d < .16) press = Math.min(press, 1 - .16 * Math.sin(Math.PI * (d + .08) / .24)); });
+    const o = clamp((t - seg.t0) / .2) * (1 - clamp((t - (seg.t1 - .3)) / .3));
+    c.style.transform = `translate3d(${x - 5}px,${y - 3}px,0)`;
+    c.firstElementChild.style.transform = `scale(${press})`;
+    c.style.opacity = o;
+  }
+  R.ripples.forEach(r => {
+    const p = clamp((t - r.t) / .55);
+    if (p <= 0 || p >= 1) { r.el.style.opacity = 0; return; }
+    r.el.style.transform = `translate3d(${r.x}px,${r.y}px,0) scale(${lerp(.3, 1.5, E.outCubic(p))})`;
+    r.el.style.opacity = (1 - p) * .9;
+  });
+}
+
+/* ---- copies (pastille + titre + texte) ---- */
+function renderCopy(c, lt, tin, tout) {
+  fadeUp(c.chip, lt, tin, { dist: 24, out: tout, odist: 30 });
+  words(c.h, lt, tin + .1, { st: .06, out: tout + .03, ost: .03 });
+  fadeUp(c.p, lt, tin + .45, { dist: 30, out: tout + .08, odist: 30 });
+}
+
+/* ================================ SCÈNES ================================ */
+const RENDER = {
+  s0(lt) {
+    // anneaux
+    [['#s0r1', .35], ['#s0r2', .55]].forEach(([s, a]) => {
+      const p = clamp((lt - a) / 1.5);
+      tr($(s), 0, 0, lerp(.4, 2.6, E.outCubic(p)), p > 0 && p < 1 ? (1 - p) * .9 : 0);
+    });
+    // triangles
+    const from = [[-70, -50, -40], [70, -50, 40], [0, 70, 0]];
+    R.s0tris.forEach((el, i) => {
+      const p = clamp((lt - (.15 + i * .1)) / .9);
+      const e = E.outBack(p), e2 = E.outCubic(p);
+      el.style.transform = `translate(${from[i][0] * (1 - e2)}px,${from[i][1] * (1 - e2)}px) rotate(${from[i][2] * (1 - e2)}deg) scale(${clamp(e, 0, 1.2)})`;
+      el.style.opacity = clamp(p * 3);
+    });
+    const shift = (34 + R.s0wordW) / 2;
+    const mv = P(lt, 1.0, .85, E.inOutCubic);
+    $('#s0row').style.transform = `translateX(${shift * (1 - mv)}px)`;
+    R.s0word.forEach((w, i) => {
+      const p = P(lt, 1.18 + i * .06, .9, E.outExpo);
+      w.style.transform = `translate3d(0,${(1 - p) * 110}%,0)`; w.style.opacity = clamp(p * 2);
+    });
+    words(R.s0tag, lt, 1.75, { st: .045 });
+    const q = P(lt, 2.9, .55, E.inCubic);
+    tr($('#s0g'), 0, 0, 1 + q * .22, 1 - q); blur($('#s0g'), q * 10);
+  },
+
+  s1(lt) {
+    const fo = P(lt, 0, .7) * (1 - P(lt, 3.95, .5, E.inCubic));
+    $('#s1flow').style.opacity = fo * .55;
+    const speeds = [95, 150, 120, 170, 105], offs = [0, 310, 120, 420, 230];
+    R.fcols.forEach((col, i) => {
+      const y = ((lt + 3) * speeds[i] + offs[i]) % 1000 - 1000;
+      col.style.transform = `translate3d(0,${y}px,0)`;
+    });
+    words(R.s1a, lt, .25, { st: .055, out: 1.95 });
+    words(R.s1b, lt, .55, { st: .055, out: 2.05 });
+    words(R.s1c, lt, 2.25, { st: .07, out: 3.72 });
+    words(R.s1d, lt, 2.45, { st: .07, out: 3.8 });
+    const u = P(lt, 2.85, .65, E.inOutCubic);
+    R.s1u.style.strokeDasharray = R.s1uLen;
+    R.s1u.style.strokeDashoffset = R.s1uLen * (1 - u);
+    $('#s1u').style.opacity = 1 - P(lt, 3.75, .3);
+  },
+
+  s2(lt) {
+    renderCopy(R.c2, lt, .3, 3.15);
+    const v = kf(lt, [
+      [.25, { cx: 1368 + 620, cy: 570, s: .9, rx: 8, ry: -36, o: 0 }],
+      [1.6, { cx: 1368, cy: 540, s: .9, rx: 4, ry: -13, o: 1 }, E.outExpo],
+      [3.2, { cx: 1368, cy: 540, s: .9, rx: 3, ry: -9, o: 1 }, E.linear],
+      [4.5, { cx: -62, cy: 411.5, s: 1.35, rx: 0, ry: 0, o: 1 }, E.inOutCubic],
+      [6.85, { cx: -80, cy: 404, s: 1.38, rx: 0, ry: 0, o: 1 }, E.linear],
+      [7.3, { cx: -80, cy: 330, s: 1.38, rx: 0, ry: 0, o: 0 }, E.inCubic],
+    ]);
+    v.o = clamp(v.o * 1.6);
+    setWin($('#w2'), v);
+    const hp = P(lt, 4.35, .5, E.outBack);
+    tr($('#w2hl'), 0, 0, lerp(1.08, 1, clamp(hp)), clamp(hp * 2));
+    // toasts
+    const ta = [1.45, 2.0, 2.55], els = ['#t2a', '#t2b', '#t2c'].map(s => $(s));
+    els.forEach((el, i) => {
+      const p = P(lt, ta[i], .8, E.outExpo);
+      let push = 0; for (let j = i + 1; j < 3; j++) push += P(lt, ta[j], .55, E.inOutCubic) * 112;
+      const q = P(lt, 3.0 + (2 - i) * .06, .45, E.inCubic);
+      tr(el, q * 80, 160 + push - (1 - p) * 30, .94 + .06 * p, clamp(p * 1.5) * (1 - q));
+    });
+    // bénéfice
+    words(R.pcap, lt, 4.35, { st: .05, out: 6.78 });
+    fadeUp($('#pc'), lt, 4.5, { dist: 60, s0: .96, out: 6.85, odist: 60 });
+    fadeUp(R.pcHd, lt, 4.7, { dist: 16 });
+    R.pcRows.forEach((r, i) => fadeUp(r, lt, 4.8 + i * .14, { dist: 18 }));
+    fadeUp(R.pcTot, lt, 5.2, { dist: 18 });
+    const val = 103.39 * P(lt, 5.25, .9, E.outCubic);
+    $('#pcv').textContent = '+' + nf2.format(val) + ' €';
+  },
+
+  s3(lt) {
+    renderCopy(R.c3, lt, .3, 2.45);
+    const v = kf(lt, [
+      [.2, { cx: 548 - 620, cy: 570, s: .9, rx: 8, ry: 36, o: 0 }],
+      [1.55, { cx: 548, cy: 540, s: .9, rx: 4, ry: 13, o: 1 }, E.outExpo],
+      [2.5, { cx: 548, cy: 540, s: .9, rx: 3, ry: 10, o: 1 }, E.linear],
+      [3.7, { cx: 815, cy: 790, s: 1.25, rx: 0, ry: 0, o: 1 }, E.inOutCubic],
+      [5.65, { cx: 815, cy: 782, s: 1.27, rx: 0, ry: 0, o: 1 }, E.linear],
+      [6.1, { cx: 815, cy: 700, s: 1.27, rx: 0, ry: 0, o: 0 }, E.inCubic],
+    ]);
+    v.o = clamp(v.o * 1.6);
+    setWin($('#w3'), v);
+    $('#w3 .dim').style.opacity = .62 * P(lt, 2.9, .8);
+    fadeUp($('#fc'), lt, 2.95, { dist: 70, s0: .95, out: 5.65, odist: 60 });
+    fadeUp($('#fr1'), lt, 3.15, { dist: 20 }); fadeUp($('#fr2'), lt, 3.3, { dist: 20 });
+    R.fcChips.forEach((c, i) => pop(c, lt, 3.4 + i * .07, { dur: .55, from: .5 }));
+    $('#pr1').textContent = Math.round(65 * P(lt, 3.5, 1.2, E.outCubic));
+    $('#pr2').textContent = Math.round(49 * P(lt, 3.6, 1.2, E.outCubic));
+    const a1 = P(lt, 4.24, .28, E.inOutCubic), a2 = P(lt, 4.89, .28, E.inOutCubic);
+    toggle($('#tg1'), a1); toggle($('#tg2'), a2);
+    const n = (a1 > .5) + (a2 > .5);
+    const pill = $('#fcpill');
+    pill.lastElementChild.textContent = n === 0 ? '0 filtre armé' : n === 1 ? '1 filtre armé' : '2 filtres armés';
+    pill.style.background = n ? '#e3f5ec' : '#f3f4f6'; pill.style.color = n ? '#0e7a50' : '#6b6f76';
+    pill.firstElementChild.style.background = n ? '#16835a' : '#c4c6cb';
+    const bump = Math.max(Math.sin(Math.PI * clamp((lt - 4.3) / .3)), Math.sin(Math.PI * clamp((lt - 4.95) / .3)));
+    pill.style.transform = `scale(${1 + .08 * bump})`;
+  },
+
+  s4(lt) {
+    renderCopy(R.c4, lt, .3, 2.45);
+    const v = kf(lt, [
+      [.15, { cx: 1330, cy: 540 + 680, s: .84, rx: -28, ry: -6, o: 0 }],
+      [1.55, { cx: 1330, cy: 540, s: .84, rx: 3, ry: -11, o: 1 }, E.outExpo],
+      [2.5, { cx: 1330, cy: 540, s: .84, rx: 2, ry: -8, o: 1 }, E.linear],
+      [3.7, { cx: 560, cy: 560, s: .8, rx: 0, ry: 13, o: 1 }, E.inOutCubic],
+      [6.0, { cx: 542, cy: 560, s: .8, rx: 0, ry: 15, o: 1 }, E.linear],
+      [6.45, { cx: 542, cy: 480, s: .8, rx: 0, ry: 15, o: 0 }, E.inCubic],
+    ]);
+    v.o = clamp(v.o * 1.6);
+    setWin($('#w4'), v, 1198, 758);
+    $('#w4 .dim').style.opacity = .3 * P(lt, 3.0, .8);
+    fadeUp($('#sc'), lt, 3.0, { dist: 70, s0: .95, out: 6.0, odist: 60 });
+    ['#si1', '#si2', '#si3', '#si4'].forEach((s, i) => fadeUp($(s), lt, 3.2 + i * .12, { dist: 20 }));
+    $$('#sc .sec').forEach((s, i) => fadeUp(s, lt, 3.15 + i * .3, { dist: 14 }));
+    toggle($('#tg3'), P(lt, 3.75, .3, E.inOutCubic));
+    toggle($('#tg4'), P(lt, 3.95, .3, E.inOutCubic));
+    toggle($('#tg5'), P(lt, 4.47, .3, E.inOutCubic));
+    const g = P(lt, 4.7, .5) * (1 - P(lt, 5.9, .4));
+    $('#inp').style.boxShadow = `0 0 0 ${4 * g}px rgba(22,131,90,${.18 * g})`;
+    $('#inp').style.borderColor = mix([220, 221, 224], [22, 131, 90], g);
+    fadeUp($('#scnote'), lt, 4.85, { dist: 14 });
+  },
+
+  s5(lt) {
+    renderCopy(R.c5, lt, .3, 2.5);
+    const v = kf(lt, [
+      [.15, { cx: 548 - 620, cy: 570, s: .9, rx: 8, ry: 36, o: 0 }],
+      [1.55, { cx: 548, cy: 540, s: .9, rx: 4, ry: 13, o: 1 }, E.outExpo],
+      [2.55, { cx: 548, cy: 540, s: .9, rx: 3, ry: 10, o: 1 }, E.linear],
+      [3.7, { cx: 960, cy: 600, s: .86, rx: 0, ry: 0, o: 1 }, E.inOutCubic],
+      [7.35, { cx: 960, cy: 600, s: .84, rx: 0, ry: 0, o: 1 }, E.linear],
+      [7.8, { cx: 960, cy: 520, s: .84, rx: 0, ry: 0, o: 0 }, E.inCubic],
+    ]);
+    v.o = clamp(v.o * 1.6);
+    setWin($('#w5'), v);
+    $('#w5 .dim').style.opacity = .8 * P(lt, 2.8, .9);
+    // automatisation
+    pop($('#fp1'), lt, 2.85, { out: 7.3 }); pop($('#fp2'), lt, 3.1, { out: 7.34 }); pop($('#fp3'), lt, 3.35, { out: 7.38 });
+    [['#ar1', 3.0], ['#ar2', 3.25]].forEach(([s, a]) => {
+      const p = $(s + ' path'); const L = 100;
+      p.style.strokeDasharray = L; p.style.strokeDashoffset = L * (1 - P(lt, a, .4, E.inOutCubic));
+      $(s).style.opacity = 1 - P(lt, 7.3, .3);
+    });
+    // conversation
+    fadeUp($('#chat'), lt, 3.15, { dist: 70, s0: .95, out: 7.35, odist: 60 });
+    const t0 = 3.75, t1 = 5.05, txt = R.m1text;
+    const n = Math.round(txt.length * clamp((lt - t0) / (t1 - t0)));
+    let s = txt.slice(0, n)
+      .replace('Gilet polaire pour femme', '<mark>Gilet polaire pour femme</mark>')
+      .replace('10,20 €', '<mark>10,20 €</mark>');
+    const typing = lt >= t0 && lt < t1 + .4;
+    const caretOn = typing && (Math.floor(lt * 4) % 2 === 0 || lt < t1);
+    $('#m1b').innerHTML = s + (caretOn ? '<span class="caret"></span>' : '');
+    fadeUp($('#m1'), lt, 3.65, { dist: 20 });
+    fadeUp($('#m1o'), lt, 5.15, { dist: 12 });
+    const dIn = P(lt, 5.4, .3), dOut = P(lt, 6.0, .15);
+    tr($('#m2d'), 0, (1 - dIn) * 14, 1, dIn * (1 - dOut));
+    $$('#m2d i').forEach((d, i) => { d.style.transform = `translateY(${-5 * Math.max(0, Math.sin((lt * 7) - i * .9))}px)`; });
+    fadeUp($('#m2'), lt, 6.0, { dist: 16 });
+    const ap = clamp((lt - 6.45) / .55);
+    $('#acc').style.transform = `translate3d(-50%,${(1 - E.outCubic(ap)) * 16}px,0) scale(${lerp(.7, 1, E.outBack(ap))})`;
+    $('#acc').style.opacity = clamp(ap * 2.5);
+  },
+
+  s6(lt) {
+    renderCopy(R.c6, lt, .3, 3.25);
+    const v = kf(lt, [
+      [.15, { cx: 1368, cy: 540 + 680, s: .9, rx: -26, ry: -8, o: 0 }],
+      [1.55, { cx: 1368, cy: 540, s: .9, rx: 4, ry: -13, o: 1 }, E.outExpo],
+      [3.3, { cx: 1368, cy: 540, s: .9, rx: 3, ry: -9, o: 1 }, E.linear],
+      [4.1, { cx: 1368 + 520, cy: 560, s: .86, rx: 0, ry: -20, o: 0 }, E.inCubic],
+    ]);
+    v.o = clamp(v.o * 1.6);
+    setWin($('#w6'), v);
+    $('#w6img').style.transform = `translateY(${-367 * P(lt, 1.45, 1.6, E.inOutCubic)}px)`;
+    ['#k1', '#k2', '#k3', '#k4'].forEach((s, i) => fadeUp($(s), lt, 3.55 + i * .1, { dist: 50, s0: .95, out: 6.8 + i * .04, odist: 50 }));
+    fadeUp($('#chart'), lt, 3.85, { dist: 70, s0: .97, out: 6.85, odist: 50 });
+    const c = P(lt, 3.75, 1.5, E.outCubic);
+    $('#k1v').textContent = nf0.format(Math.round(7853 * c)) + ' €';
+    $('#k2v').textContent = nf0.format(Math.round(2567 * c)) + ' €';
+    $('#k3v').textContent = nf1.format(32.7 * c) + ' %';
+    $('#k4v').textContent = nf0.format(Math.round(5869 * c)) + ' €';
+    R.bars.forEach((b, i) => {
+      const p = P(lt, 4.25 + i * .09, 1.0, E.outQuart);
+      b.b.style.height = (b.v / 750 * 360 * p) + 'px';
+      b.val.textContent = nf0.format(Math.round(b.v * p)) + ' €';
+      b.val.style.opacity = clamp((p - .15) * 2);
+    });
+  },
+
+  s7(lt) {
+    const inP = P(lt, 0, 1.4, E.outCubic), outP = P(lt, 4.85, .75, E.inCubic);
+    const s = lerp(1.7, 1.38, inP) * (1 + outP * .55);
+    $('#wall').style.transform = `rotateX(46deg) rotateZ(-30deg) scale(${s})`;
+    $('#wall').style.opacity = clamp(inP * 1.5) * (1 - outP);
+    R.wcols.forEach((col, i) => {
+      const dir = i % 2 ? 1 : -1, sp = 70 + (i % 3) * 18;
+      const y = -1500 - i * 130 + dir * (lt + 1) * sp;
+      col.style.transform = `translate3d(0,${y}px,0)`;
+    });
+    $('#wallveil').style.opacity = 1 - outP;
+    words(R.s7a, lt, .45, { st: .07, out: 4.75 });
+    words(R.s7b, lt, .8, { st: .07, out: 4.82 });
+    R.fchips.forEach((c, i) => pop(c, lt, 1.45 + i * .1, { out: 4.7 + i * .02, dy: 20 }));
+  },
+
+  s8(lt) {
+    [['#s8r1', .75], ['#s8r2', .95]].forEach(([s, a]) => {
+      const p = clamp((lt - a) / 1.5);
+      tr($(s), 0, 0, lerp(.4, 2.8, E.outCubic(p)), p > 0 && p < 1 ? (1 - p) * .8 : 0);
+    });
+    const from = [[-420, -260, -160], [420, -260, 160], [0, 380, 90]];
+    R.s8tris.forEach((el, i) => {
+      const p = P(lt, .2 + i * .07, 1.0, E.outExpo);
+      el.style.transform = `translate(${from[i][0] * (1 - p)}px,${from[i][1] * (1 - p)}px) rotate(${from[i][2] * (1 - p)}deg) scale(${lerp(2.2, 1, p)})`;
+      el.style.opacity = clamp(p * 3);
+    });
+    const shift = (30 + R.s8wordW) / 2;
+    const mv = P(lt, 1.05, .85, E.inOutCubic);
+    $('#s8row').style.transform = `translateX(${shift * (1 - mv)}px)`;
+    R.s8word.forEach((w, i) => {
+      const p = P(lt, 1.2 + i * .06, .9, E.outExpo);
+      w.style.transform = `translate3d(0,${(1 - p) * 110}%,0)`; w.style.opacity = clamp(p * 2);
+    });
+    words(R.s8tag, lt, 1.75, { st: .07 });
+    R.s8chips.forEach((c, i) => pop(c, lt, 2.35 + i * .08, { dy: 14 }));
+    const z = 1 + .03 * P(lt, 1.0, 4.0, E.linear);
+    $('#s8g').style.transform = `scale(${z})`;
+  },
+};
+
+/* ---- fond ---- */
+function renderBg(t) {
+  $('#bg .grid').style.backgroundPosition = `${-t * 6}px ${-t * 10}px`;
+  $('#bg .b1').style.transform = `translate3d(${-380 + Math.sin(t * .23) * 160}px,${-520 + Math.cos(t * .19) * 120}px,0)`;
+  $('#bg .b2').style.transform = `translate3d(${1060 + Math.cos(t * .21) * 160}px,${200 + Math.sin(t * .17) * 140}px,0)`;
+  $('#bg').style.opacity = 1;
+}
+
+function renderFrame(t) {
+  renderBg(t);
+  for (const id in SC) {
+    const [a, b] = SC[id];
+    const on = t >= a && t < b;
+    scenes[id].style.display = on ? 'block' : 'none';
+    if (on) RENDER[id](t - a);
+  }
+  renderCursor(t);
+}
+
+/* ---- repères sonores (exportés pour le mixage) ---- */
+function buildCues() {
+  const c = [];
+  const add = (type, t, g = 1, d = 0) => c.push({ type, t: +t.toFixed(3), g, d });
+  add('impact', .22, .55); add('shimmer', .3, .6); add('swish', 1.15, .45); add('whoosh', 2.85, .7);
+  const s1 = SC.s1[0]; add('swish', s1 + .25, .45); add('swish', s1 + 2.25, .6); add('whoosh', s1 + 3.72, .7);
+  const s2 = SC.s2[0]; add('whoosh', s2 + .25); [1.45, 2.0, 2.55].forEach(x => add('pop', s2 + x, .8)); add('whoosh', s2 + 3.25, .75); add('tick', s2 + 4.4, .8); add('count', s2 + 5.25, .7, .9); add('whoosh', s2 + 6.85, .45);
+  const s3 = SC.s3[0]; add('whoosh', s3 + .2); add('whoosh', s3 + 2.5, .75); add('count', s3 + 3.4, .45, .55);
+  const s4 = SC.s4[0]; add('whoosh', s4 + .15); add('whoosh', s4 + 2.55, .75); add('tick', s4 + 3.75, .55); add('tick', s4 + 3.95, .55); add('chime', s4 + 4.85, .6);
+  const s5 = SC.s5[0]; add('whoosh', s5 + .15); add('whoosh', s5 + 2.6, .75); [2.85, 3.1, 3.35].forEach(x => add('pop', s5 + x, .65)); add('typing', s5 + 3.75, .8, 1.3); add('pop', s5 + 6.0, .8); add('chime', s5 + 6.45);
+  const s6 = SC.s6[0]; add('whoosh', s6 + .15); add('whoosh', s6 + 3.3, .75); add('count', s6 + 3.75, .7, 1.5); [0, 1, 2, 3, 4, 5].forEach(i => add('tick', s6 + 4.25 + i * .09, .4));
+  const s7 = SC.s7[0]; add('rise', s7 - .75, .7, .85); add('impact', s7 + .1, .8); FCHIPS.forEach((_, i) => add('pop', s7 + 1.45 + i * .1, .45));
+  const s8 = SC.s8[0]; add('whoosh', s8 - .1, .8); add('impact', s8 + .5, 1); add('shimmer', s8 + .55, .8); add('chime', s8 + 1.8, .6);
+  CURSOR.forEach(seg => seg.clicks.forEach(t => add('click', t)));
+  return c.sort((a, b) => a.t - b.t);
+}
+
+/* ---- initialisation ---- */
+async function init() {
+  await document.fonts.ready;
+  await Promise.all($$('img').map(i => i.decode().catch(() => {})));
+  for (const id in scenes) scenes[id].style.display = 'block';
+  initRefs();
+  centerChips();
+  buildCursor();
+  await Promise.all($$('img').map(i => i.decode().catch(() => {})));
+  for (const id in scenes) scenes[id].style.display = 'none';
+  window.DURATION = DURATION;
+  window.CUES = buildCues();
+  window.SCENES = SC;
+  const q = new URLSearchParams(location.search);
+  renderFrame(q.has('t') ? +q.get('t') : 0);
+  window.READY = true;
+}
+window.renderFrame = renderFrame;
+init();
+</script>
+</body>
+</html>

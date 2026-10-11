@@ -41,7 +41,8 @@
       font-family: var(--display);
       background: var(--bg);
       color: var(--txt);
-      overflow: hidden;
+      /* scroll vertical autorisé : sur un écran bas, la carte reste lisible en entier */
+      overflow-x: hidden;
       -webkit-user-select: none; user-select: none;
     }
     img, video, svg, a { -webkit-user-drag: none; }
@@ -67,7 +68,7 @@
       object-fit: cover;
       opacity: 0;
       filter: saturate(.85) contrast(1.05) brightness(.9);
-      transition: opacity 1.1s ease, filter .9s ease;
+      transition: opacity 1.1s ease, filter 1.2s ease, transform 1.6s cubic-bezier(.22,1,.36,1);
     }
     .bg.is-loaded video { opacity: 1; }
     /* voile sombre permanent pour la lisibilité */
@@ -76,9 +77,8 @@
       background:
         radial-gradient(120% 90% at 50% 50%, transparent 40%, rgba(0,0,0,.55) 100%),
         linear-gradient(180deg, rgba(4,5,6,.3), rgba(4,5,6,.55));
-      transition: opacity .9s ease;
     }
-    /* pendant l'intro : fond plus net, moins voilé */
+    /* après l'intro : fond plus sombre et légèrement flou, recul en douceur derrière la carte */
     body.entered .bg video { filter: saturate(.8) contrast(1.05) brightness(.72) blur(3px); transform: translate(-50%,-50%) scale(1.04); }
 
     /* grain subtil par-dessus tout */
@@ -113,6 +113,7 @@
 
     /* ============ CARTE PRINCIPALE ============ */
     .card {
+      --banner-h: 220px;
       position: relative;
       border-radius: 22px;
       border: 1px solid var(--line);
@@ -122,7 +123,7 @@
       box-shadow: 0 24px 70px -20px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06);
       overflow: hidden; /* arrondis propres pour la bannière */
       will-change: transform;
-      transition: border-color .3s ease;
+      transition: border-color .4s ease, box-shadow .4s ease;
     }
     .card:hover {
       border-color: var(--line-2);
@@ -140,14 +141,23 @@
       transition: opacity .25s ease;
     }
     .card:hover::before { opacity: 1; }
+    /* les animations d'entrée du contenu attendent le clic sur l'intro,
+       sinon elles se jouent derrière l'écran d'accueil et on ne les voit jamais */
+    body:not(.entered) .card * { animation-play-state: paused; }
 
-    /* ---- bannière vidéo ---- */
+    /* ---- bannière vidéo ----
+       Aucune ligne de séparation : la vidéo se dissout dans la carte en 3 couches.
+       1. .banner : masque elliptique (le fondu s'incurve sur les côtés) dont
+          l'opacité suit une courbe « smootherstep ». Sa pente est nulle au début
+          et à la fin du fondu : pas de cassure, donc pas de ligne visible.
+       2. .glow : copie floutée de la vidéo (cf. ambientGlow en JS) qui prolonge
+          ses couleurs plus bas dans la carte, comme un « mode ambiant ».
+       3. le verre dépoli de la carte, qui prend le relais. */
     .banner {
-      position: relative; height: 168px;
-      background: rgba(255,255,255,.02);
-      /* fondu vers le corps de la carte : la vidéo se dissout dans le verre */
-      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 52%, rgba(0,0,0,.4) 82%, transparent 100%);
-      mask-image: linear-gradient(to bottom, #000 0%, #000 52%, rgba(0,0,0,.4) 82%, transparent 100%);
+      position: relative; z-index: 1;
+      height: var(--banner-h);
+      -webkit-mask-image: radial-gradient(150% 100% at 50% 0%, #000 30%, rgba(0,0,0,.984) 38.75%, rgba(0,0,0,.896) 47.5%, rgba(0,0,0,.725) 56.25%, rgba(0,0,0,.5) 65%, rgba(0,0,0,.275) 73.75%, rgba(0,0,0,.104) 82.5%, rgba(0,0,0,.016) 91.25%, transparent 100%);
+      mask-image: radial-gradient(150% 100% at 50% 0%, #000 30%, rgba(0,0,0,.984) 38.75%, rgba(0,0,0,.896) 47.5%, rgba(0,0,0,.725) 56.25%, rgba(0,0,0,.5) 65%, rgba(0,0,0,.275) 73.75%, rgba(0,0,0,.104) 82.5%, rgba(0,0,0,.016) 91.25%, transparent 100%);
     }
     .banner video {
       position: absolute; inset: 0;
@@ -158,15 +168,26 @@
       transition: opacity .8s ease;
     }
     .banner.is-loaded video { opacity: 1; }
+    .glow {
+      position: absolute; top: 0; left: 0; z-index: 0;
+      width: 100%; height: calc(var(--banner-h) * 1.6);
+      pointer-events: none;
+      opacity: 0;
+      filter: blur(24px) saturate(1.25) brightness(.85);
+      -webkit-mask-image: linear-gradient(to bottom, #000 45%, rgba(0,0,0,.984) 51.9%, rgba(0,0,0,.896) 58.8%, rgba(0,0,0,.725) 65.6%, rgba(0,0,0,.5) 72.5%, rgba(0,0,0,.275) 79.4%, rgba(0,0,0,.104) 86.3%, rgba(0,0,0,.016) 93.1%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 45%, rgba(0,0,0,.984) 51.9%, rgba(0,0,0,.896) 58.8%, rgba(0,0,0,.725) 65.6%, rgba(0,0,0,.5) 72.5%, rgba(0,0,0,.275) 79.4%, rgba(0,0,0,.104) 86.3%, rgba(0,0,0,.016) 93.1%, transparent 100%);
+      transition: opacity 1.4s ease;
+    }
+    .glow.is-on { opacity: .45; }
     /* pas de bannière configurée (ou vidéo en erreur) : layout d'origine */
-    .card.no-banner .banner { display: none; }
+    .card.no-banner .banner, .card.no-banner .glow { display: none; }
     .card.no-banner .content { margin-top: 0; padding-top: 30px; }
 
     /* ---- contenu ---- */
     .content {
       position: relative; z-index: 2;
       padding: 0 32px 20px;
-      margin-top: -54px; /* l'avatar chevauche la bannière */
+      margin-top: calc(var(--banner-h) * -.48); /* l'avatar chevauche le fondu de la bannière */
     }
 
     /* ---- entête identité ---- */
@@ -321,64 +342,6 @@
     .views svg { width: 16px; height: 16px; opacity: .8; }
     .views b { color: var(--txt); font-weight: 700; letter-spacing: .02em; }
 
-    /* ============ LECTEUR MUSIQUE ============ */
-    .player {
-      position: relative;
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: var(--glass);
-      backdrop-filter: blur(18px) saturate(1.1);
-      -webkit-backdrop-filter: blur(18px) saturate(1.1);
-      box-shadow: 0 18px 50px -18px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.05);
-      padding: 12px 16px;
-      display: flex; align-items: center; gap: 14px;
-      will-change: transform;
-    }
-    /* fill "backwards" : ne pas écraser le transform du tilt une fois l'entrée jouée */
-    body.entered .player { animation: cardIn .9s cubic-bezier(.22,1,.36,1) .18s backwards; }
-    .player::before {
-      content: ""; position: absolute; inset: 0; border-radius: inherit;
-      pointer-events: none; opacity: 0; z-index: 1;
-      background: radial-gradient(circle at var(--shine-x, 50%) var(--shine-y, 50%), rgba(255,255,255,.07), transparent 40%);
-      mix-blend-mode: screen;
-      transition: opacity .25s ease;
-    }
-    .player:hover::before { opacity: 1; }
-    .cover {
-      width: 46px; height: 46px; border-radius: 10px; overflow: hidden; flex: none;
-      border: 1px solid var(--line-2); background: #0a0c0e;
-    }
-    .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .track { flex: 1; min-width: 0; }
-    .track-title {
-      font-family: var(--mono); font-size: 12.5px; font-weight: 700;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .track-line { margin-top: 7px; display: flex; align-items: center; gap: 9px; }
-    .time { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--faint); min-width: 30px; }
-    .time.right { text-align: right; }
-    .seek {
-      flex: 1; height: 14px; display: flex; align-items: center; cursor: pointer;
-    }
-    .seek-rail { position: relative; width: 100%; height: 3px; border-radius: 2px; background: rgba(255,255,255,.14); }
-    .seek-fill {
-      position: absolute; inset: 0 auto 0 0; width: 0%;
-      border-radius: 2px; background: var(--txt);
-      box-shadow: 0 0 8px rgba(255,255,255,.5);
-    }
-    .play-btn {
-      flex: none; width: 38px; height: 38px; border-radius: 50%;
-      border: 1px solid var(--line-2); background: rgba(255,255,255,.06);
-      display: grid; place-items: center; color: var(--txt); cursor: pointer;
-      transition: transform .15s ease, background .2s ease;
-    }
-    .play-btn:hover { transform: scale(1.08); background: rgba(255,255,255,.12); }
-    .play-btn:active { transform: scale(.92); }
-    .play-btn svg { width: 15px; height: 15px; }
-    .play-btn .ic-pause { display: none; }
-    .play-btn.playing .ic-play { display: none; }
-    .play-btn.playing .ic-pause { display: block; }
-
     /* ============ INTRO ============ */
     .intro {
       position: fixed; inset: 0; z-index: 100;
@@ -390,7 +353,12 @@
       transition: opacity .8s cubic-bezier(.22,1,.36,1), visibility .8s;
     }
     .intro.leaving { opacity: 0; visibility: hidden; pointer-events: none; }
-    .intro-inner { text-align: center; }
+    .intro-inner {
+      text-align: center;
+      transition: transform .9s cubic-bezier(.22,1,.36,1), filter .8s ease;
+    }
+    /* à la sortie, le nom se dissout (léger zoom + flou) pendant que la carte arrive */
+    .intro.leaving .intro-inner { transform: scale(1.06); filter: blur(8px); }
     .intro-mark {
       font-size: clamp(36px, 9vw, 56px); font-weight: 700; letter-spacing: .05em;
       text-shadow: 0 0 30px rgba(255,255,255,.45), 0 0 80px rgba(255,255,255,.15);
@@ -429,8 +397,8 @@
 
     /* ============ RESPONSIVE ============ */
     @media (max-width: 560px) {
-      .banner { height: 146px; }
-      .content { padding: 0 20px 16px; margin-top: -48px; }
+      .card { --banner-h: 190px; }
+      .content { padding: 0 20px 16px; }
       .card.no-banner .content { padding-top: 24px; }
       h1 { font-size: 28px; }
       .avatar { width: 92px; height: 92px; }
@@ -456,7 +424,8 @@
 
       <!-- ======== CARTE PRINCIPALE ======== -->
       <section class="card" id="card">
-        <!-- bannière vidéo, fondue dans le corps de la carte -->
+        <!-- bannière vidéo + halo flouté qui la prolonge : fondus dans le corps de la carte -->
+        <canvas class="glow" id="glow" aria-hidden="true"></canvas>
         <div class="banner" id="banner" aria-hidden="true"></div>
 
         <div class="content">
@@ -503,23 +472,6 @@
         </div><!-- /.content -->
       </section>
 
-      <!-- ======== LECTEUR ======== -->
-      <section class="player" id="player" aria-label="Lecteur de musique">
-        <div class="cover"><img id="track-cover" alt="Pochette" loading="lazy" decoding="async" /></div>
-        <div class="track">
-          <div class="track-title" id="track-title"></div>
-          <div class="track-line">
-            <span class="time" id="time-now">0:00</span>
-            <div class="seek" id="seek"><div class="seek-rail"><div class="seek-fill" id="seek-fill"></div></div></div>
-            <span class="time right" id="time-total">0:00</span>
-          </div>
-        </div>
-        <button class="play-btn" id="play-btn" type="button" aria-label="Lecture / pause">
-          <svg class="ic-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          <svg class="ic-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
-        </button>
-      </section>
-
     </div>
   </main>
 
@@ -547,14 +499,6 @@
     backgroundVideo: "https://res.cloudinary.com/dxtrnniue/video/upload/v1778967954/Money_-_Gremlin_foulek_hasPtXUCpEg_v4w2ie.mp4",
     bannerVideo: "https://res.cloudinary.com/dxtrnniue/video/upload/v1782597623/ezgif-3ef5e2a7647a2ced_kzrajc.mp4",
     avatarVideo: "https://res.cloudinary.com/dxtrnniue/video/upload/v1778969195/CAEF1847-3781-4D58-A419-69E07AFBBC4E_qupid2.mp4",
-
-    // Musique
-    audio: {
-      src: "https://res.cloudinary.com/dxtrnniue/video/upload/v1779022578/MeleonK_PTSD_Clip_Officiel_ozS0pdIZwmk_hhcqqj.webm",
-      title: "MeleonK — PTSD",
-      cover: "https://c.tenor.com/o6HMbwyGj7YAAAAd/tenor.gif",
-      volume: 0.8,
-    },
 
     // Serveur Discord
     discord: {
@@ -651,13 +595,45 @@
   // retombe proprement sur le layout sans bannière
   const banner = $("banner");
   if (CONFIG.bannerVideo) {
-    banner.appendChild(makeVideo(
+    const bannerVideo = makeVideo(
       CONFIG.bannerVideo, 760,
-      () => banner.classList.add("is-loaded"),
+      () => { banner.classList.add("is-loaded"); ambientGlow(bannerVideo); },
       () => $("card").classList.add("no-banner")
-    ));
+    );
+    banner.appendChild(bannerVideo);
   } else {
     $("card").classList.add("no-banner");
+  }
+
+  /* Halo ambiant : la bannière est recopiée ~15 fois/s dans un canvas
+     minuscule, que le CSS floute et étire sous la vidéo. Ses couleurs
+     débordent ainsi dans la carte, là où la vidéo s'efface. Le canvas est
+     "tainted" (vidéo cross-origin) : sans conséquence, on ne relit jamais
+     ses pixels. */
+  function ambientGlow(video) {
+    const glow = $("glow");
+    const ctx = glow.getContext("2d");
+    if (!ctx) return;
+    let last = 0;
+    (function frame(now) {
+      requestAnimationFrame(frame);
+      if (now - last < 66 || video.readyState < 2 || !video.videoWidth) return;
+      last = now;
+      const bw = banner.clientWidth, bh = banner.clientHeight, gh = glow.clientHeight;
+      if (!bw || !bh || !gh) return;
+      const w = 48, h = Math.round(w * gh / bw);
+      if (glow.width !== w || glow.height !== h) { glow.width = w; glow.height = h; }
+      // même cadrage que la bannière (object-fit: cover)…
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const k = Math.min(vw / bw, vh / bh);
+      const sw = bw * k, sh = bh * k, sx = (vw - sw) / 2, sy = (vh - sh) / 2;
+      const top = Math.round(h * bh / gh);
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, top);
+      // …puis le bas de l'image est étiré vers le bas pour prolonger ses couleurs
+      const strip = sh * 0.15;
+      ctx.drawImage(video, sx, sy + sh - strip, sw, strip, 0, top, w, h - top);
+      glow.classList.add("is-on");
+    })(0);
   }
 
   // Économie batterie/CPU : vidéos en pause quand l'onglet est caché
@@ -731,84 +707,27 @@
     });
   });
 
-  // Compteur de vues (base + compteur local, animé)
-  (function initViews() {
+  // Compteur de vues (base + compteur local) — animé à l'entrée sur le site
+  const viewsTotal = (function initViews() {
     const KEY = "haspii_views";
     let local = 1;
     try {
       local = (parseInt(localStorage.getItem(KEY), 10) || 0) + 1;
       localStorage.setItem(KEY, String(local));
     } catch (e) { /* stockage indisponible (navigation privée) : on compte 1 */ }
-    const total = CONFIG.viewsBase + local;
-    const el = $("view-count");
-    const start = performance.now(), dur = 900;
-    (function tick(now) {
-      const t = Math.min(1, (now - start) / dur);
-      const eased = 1 - Math.pow(1 - t, 3);
-      el.textContent = Math.round(total * eased).toLocaleString("en-US");
-      if (t < 1) requestAnimationFrame(tick);
-    })(start);
+    return CONFIG.viewsBase + local;
   })();
 
-  /* ================================================================
-     Audio + lecteur
-     ================================================================ */
-  const audio = new Audio(CONFIG.audio.src);
-  audio.loop = true; audio.preload = "auto"; audio.volume = CONFIG.audio.volume;
-
-  $("track-title").textContent = CONFIG.audio.title;
-  $("track-cover").src = CONFIG.audio.cover;
-
-  const playBtn = $("play-btn");
-  const seekFill = $("seek-fill");
-  const timeNow = $("time-now");
-  const timeTotal = $("time-total");
-
-  const fmt = (s) => {
-    if (!isFinite(s)) return "0:00";
-    const m = Math.floor(s / 60), r = Math.floor(s % 60);
-    return `${m}:${String(r).padStart(2, "0")}`;
-  };
-
-  function syncUI() {
-    playBtn.classList.toggle("playing", !audio.paused);
-    playBtn.setAttribute("aria-label", audio.paused ? "Lecture" : "Pause");
+  function countViews() {
+    const el = $("view-count");
+    const start = performance.now(), dur = 1100;
+    (function tick(now) {
+      const t = Math.min(1, Math.max(0, (now - start) / dur));
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(viewsTotal * eased).toLocaleString("en-US");
+      if (t < 1) requestAnimationFrame(tick);
+    })(start);
   }
-  function playAudio() {
-    audio.muted = false;
-    const p = audio.play();
-    if (p && p.catch) p.catch(() => {});
-    syncUI();
-  }
-  function pauseAudio() { audio.pause(); syncUI(); }
-
-  playBtn.addEventListener("click", () => (audio.paused ? playAudio() : pauseAudio()));
-
-  audio.addEventListener("loadedmetadata", () => { timeTotal.textContent = fmt(audio.duration); });
-  audio.addEventListener("timeupdate", () => {
-    timeNow.textContent = fmt(audio.currentTime);
-    if (isFinite(audio.duration) && audio.duration > 0) {
-      seekFill.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
-    }
-  });
-  audio.addEventListener("play", syncUI);
-  audio.addEventListener("pause", syncUI);
-
-  // Barre de progression : clic + glisser pour se déplacer dans le morceau
-  const seek = $("seek");
-  function seekTo(e) {
-    const rect = seek.getBoundingClientRect();
-    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-    audio.currentTime = ratio * audio.duration;
-  }
-  seek.addEventListener("pointerdown", (e) => {
-    if (!isFinite(audio.duration) || audio.duration <= 0) return;
-    seek.setPointerCapture(e.pointerId);
-    seekTo(e);
-  });
-  seek.addEventListener("pointermove", (e) => {
-    if (seek.hasPointerCapture && seek.hasPointerCapture(e.pointerId)) seekTo(e);
-  });
 
   /* ================================================================
      Intro
@@ -818,7 +737,9 @@
     if (intro.classList.contains("leaving")) return;
     intro.classList.add("leaving");
     document.body.classList.add("entered");
-    playAudio();
+    // calés sur l'apparition de leur ligne dans la carte (cf. délais fadeUp)
+    setTimeout(startTypewriter, 750);
+    setTimeout(countViews, 800);
     setTimeout(() => intro.remove(), 900);
   }
   intro.addEventListener("click", enterSite);
@@ -829,7 +750,7 @@
   /* ================================================================
      Typewriter
      ================================================================ */
-  (function typewriter() {
+  function startTypewriter() {
     const el = $("typewriter");
     const phrases = CONFIG.typewriter;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -847,7 +768,7 @@
         else setTimeout(tick, 30);
       }
     })();
-  })();
+  }
 
   /* ================================================================
      Tilt 3D sur la carte + reflet qui suit le curseur
@@ -855,7 +776,7 @@
   (function tilt() {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     if (matchMedia("(pointer: coarse)").matches) return; // pas de tilt au tactile
-    const targets = [$("card"), $("player")];
+    const card = $("card");
     const maxTilt = 7;
     const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
     const lerp = (a, b, t) => a + (b - a) * t;
@@ -877,12 +798,9 @@
       if (!settled) {
         s.x = lerp(s.x, s.tx, 0.12);
         s.y = lerp(s.y, s.ty, 0.12);
-        const rot = `rotateX(${s.x.toFixed(3)}deg) rotateY(${s.y.toFixed(3)}deg)`;
-        for (const el of targets) {
-          el.style.transform = rot;
-          el.style.setProperty("--shine-x", `${s.shineX}%`);
-          el.style.setProperty("--shine-y", `${s.shineY}%`);
-        }
+        card.style.transform = `rotateX(${s.x.toFixed(3)}deg) rotateY(${s.y.toFixed(3)}deg)`;
+        card.style.setProperty("--shine-x", `${s.shineX}%`);
+        card.style.setProperty("--shine-y", `${s.shineY}%`);
       }
       requestAnimationFrame(loop);
     })();

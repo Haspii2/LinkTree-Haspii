@@ -19,7 +19,7 @@ python3 audio.py
 if [[ "$SCALE" == "2" ]]; then
   # maître 4K (qualité constante, son AAC 320 kbit/s)
   ffmpeg -y -loglevel error -i out/video-noaudio.mp4 -i out/audio.wav -map 0:v -map 1:a \
-    -c:v libx264 -preset slow -crf "${CRF4K:-18}" -profile:v high -level 5.2 -pix_fmt yuv420p "${TAGS[@]}" -movflags +faststart \
+    -c:v libx264 -preset slow -crf "${CRF4K:-20}" -profile:v high -level 5.2 -pix_fmt yuv420p "${TAGS[@]}" -movflags +faststart \
     -c:a aac -b:a 320k -ar 48000 -shortest VYNTI-motion-design-4K.mp4
 fi
 # version 1080p pour le partage (réduite depuis le rendu, filtre Lanczos)

@@ -66,3 +66,12 @@ for name in list(SHOTS) + list(MODALS):
     w = 864
     h = round(im.height * w / im.width)
     im.resize((w, h), Image.LANCZOS).crop((0, 0, w, min(h, 540))).save(OUT / f"wall-{name}.png")
+
+# v2 : fenêtre du Fil d'actualité avec la liste et le panneau évidés (recréés en HTML,
+# la liste peut ainsi reculer en profondeur sans laisser apparaître la capture)
+feed2 = Image.open(OUT / "feed.png").convert("RGBA")
+px = feed2.load()
+for (x0, y0, x1, y1) in ((232, 100, 1010, 866), (1020, 100, 1440, 866)):
+    hole = Image.new("RGBA", ((x1 - x0) * 2, (y1 - y0) * 2), (0, 0, 0, 0))
+    feed2.paste(hole, (x0 * 2, y0 * 2))
+feed2.save(OUT / "feed-base.png")

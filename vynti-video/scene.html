@@ -1201,10 +1201,11 @@ function renderBg(t, root) {
 const SCN = { A: [0, 16.0], B: [16.0, 21.95], C: [21.95, 40.4], D: [40.4, 54.0], E: [53.75, 60.01] };
 const RENDER = { A: renderA, B: renderB, C: renderC, D: renderD, E: renderE };
 const DURATION = 60;
-/* flou de mouvement (obturateur 180°) seulement sur les raccords et les fouettés */
-const MB = [[0, 2.15], [5.5, 6.65], [15.6, 16.45], [21.6, 22.5], [27.4, 28.05], [29.6, 30.85], [36.6, 37.85], [40.0, 40.85],
-  [44.6, 46.5], [52.6, 53.8], [53.8, 54.85]];
-const mbAt = t => MB.some(([a, b]) => t >= a && t < b);
+/* flou de mouvement (obturateur 180°) seulement sur les raccords et les fouettés.
+   Niveau 1 : mouvements rapides (6 sous-images) ; niveau 2 : raccords et fouettés (12 sous-images). */
+const MB = [[0, 2.15, 1], [5.5, 6.65, 2], [15.6, 16.45, 2], [21.6, 22.5, 2], [27.4, 28.05, 2], [29.6, 30.85, 1], [36.6, 37.85, 1],
+  [40.0, 40.85, 2], [44.6, 46.5, 2], [52.6, 53.8, 2], [53.8, 54.85, 2]];
+const mbAt = t => { const m = MB.find(([a, b]) => t >= a && t < b); return m ? m[2] : 0; };
 
 function renderFrame(t) {
   renderBg(t, $('#bgL'));

@@ -8,7 +8,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-FPS="${FPS:-60}" WORKERS="${WORKERS:-3}" SCALE="${SCALE:-1}" MB="${MB:-6}"
+FPS="${FPS:-60}" WORKERS="${WORKERS:-3}" SCALE="${SCALE:-1}" MB="${MB:-12}"
 
 python3 prepare.py
 node render.mjs --video --fps "$FPS" --workers "$WORKERS" --scale "$SCALE" --mb "$MB"

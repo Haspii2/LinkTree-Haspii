@@ -2,11 +2,12 @@
 //
 //   node render.mjs --stills 1.2,8.5,15     -> out/stills/*.png (aperçus)
 //   node render.mjs --cues                 -> out/cues.json (feuille de bruitages)
-//   node render.mjs --video [--fps 60] [--workers 3] [--scale 1] [--mb 6]
+//   node render.mjs --video [--fps 60] [--workers 3] [--scale 1] [--mb 12]
 //                                          -> out/video-noaudio.mp4 + out/cues.json
 //
 // Flou de mouvement : sur les plans que la scène marque (window.mbAt), chaque image est
-// la moyenne de --mb sous-images réparties sur un obturateur à 180° (une demi-image).
+// la moyenne de sous-images réparties sur un obturateur à 180° (une demi-image) :
+// --mb sur les raccords et fouettés, la moitié sur les mouvements plus lents.
 // Les autres images sont envoyées --mb fois à l'identique, puis ffmpeg (tmix) fait la moyenne.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
@@ -71,10 +72,13 @@ async function worker(id, frames, fps, K) {
     const t = frames[k] / fps;
     const mb = await page.evaluate(t => window.mbAt(t), t);
     if (mb && K > 1) {
+      // niveau 2 : K sous-images distinctes ; niveau 1 : K/2 sous-images, chacune écrite deux fois
       blurred++;
-      for (let i = 0; i < K; i++) {
-        await page.evaluate(t => window.renderFrame(t), t + (i / K) * (0.5 / fps));
-        await write(await page.screenshot({ type: 'png' }));
+      const n = mb >= 2 ? K : Math.max(1, K / 2), rep = K / n;
+      for (let i = 0; i < n; i++) {
+        await page.evaluate(t => window.renderFrame(t), t + (i / n) * (0.5 / fps));
+        const buf = await page.screenshot({ type: 'png' });
+        for (let r = 0; r < rep; r++) await write(buf);
       }
     } else {
       await page.evaluate(t => window.renderFrame(t), t);
@@ -101,7 +105,7 @@ async function exportCues() {
 async function video() {
   const fps = +arg('--fps', 60);
   const nw = +arg('--workers', 3);
-  const K = +arg('--mb', 6);
+  const K = +arg('--mb', 12);
   const duration = await exportCues();
   const total = Math.round(duration * fps);
   const per = Math.ceil(total / nw);

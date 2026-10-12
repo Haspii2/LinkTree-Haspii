@@ -332,7 +332,7 @@ def whoosh_noise(d, f0, f1, f2, peak=.5, bw=1.0):
     lo = sweep_filter(n[:, None], "lowpass", lambda tt: fc(tt) * (1 + bw))[:, 0]
     v = sweep_filter(lo[:, None], "highpass", lambda tt: fc(tt) / (1 + bw))[:, 0]
     x = t / d
-    e = np.where(x < peak, (x / peak) ** 2.2, np.exp(-np.minimum((x - peak) / max(1 - peak, 1e-3), 40) * 4.5))
+    e = np.where(x < peak, (x / peak) ** 2.2, np.exp(-np.clip((x - peak) / max(1 - peak, 1e-3), 0, 40) * 4.5))
     return v * e
 
 

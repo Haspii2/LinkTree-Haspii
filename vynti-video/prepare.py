@@ -5,7 +5,7 @@
 - agrandit x2 (Lanczos + léger renforcement) pour garder du texte net pendant les zooms
 """
 from pathlib import Path
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = Path(__file__).resolve().parent / "assets"
@@ -49,15 +49,30 @@ for name, src in MODALS.items():
     im = Image.open(ROOT / src).convert("RGB").crop(MODAL_BOX)
     up2(im).save(OUT / f"{name}.png", optimize=False)
 
-# Vignettes d'articles du fil d'actualité (48 px, une ligne = 68 px)
+def rounded(im: Image.Image, r: int) -> Image.Image:
+    """Coins arrondis cuits dans l'alpha (suréchantillonnés ×4) : bords lisses même en perspective,
+    là où un border-radius CSS sur une image transformée en 3D crénelle."""
+    m = Image.new("L", (im.width * 4, im.height * 4), 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, m.width - 1, m.height - 1), r * 4, fill=255)
+    out = im.convert("RGBA")
+    out.putalpha(m.resize(im.size, Image.LANCZOS))
+    return out
+
+
+# Vignettes d'articles du fil d'actualité (48 px, une ligne = 68 px), agrandies à 224 px
+# (56 px affichés × zoom 2 × écran 2x) pour ne jamais être agrandies par le navigateur
 feed = Image.open(ROOT / SHOTS["feed"]).convert("RGB")
 for i in range(11):
     y = 110 + i * 68
-    thumb = feed.crop((263, y, 311, y + 48)).resize((144, 144), Image.LANCZOS)
-    thumb.save(OUT / f"thumb{i}.png")
+    src = feed.crop((263, y, 311, y + 48))
+    big = src.resize((224, 224), Image.BICUBIC).filter(ImageFilter.UnsharpMask(radius=2, percent=40, threshold=1))
+    rounded(big, 40).save(OUT / f"thumb{i}.png")
 
-# Photo de l'article sélectionné (panneau de détail)
-feed.crop((1037, 161, 1414, 601)).save(OUT / "detail.png")
+# Photo de l'article sélectionné (panneau de détail) : format 396 × 250, ×3, coins arrondis
+detail = feed.crop((1037, 161, 1414, 601))
+detail.save(OUT / "detail.png")
+d = detail.crop((0, 73, 377, 311)).resize((1188, 750), Image.LANCZOS)
+rounded(d.filter(ImageFilter.UnsharpMask(radius=2, percent=50, threshold=2)), 30).save(OUT / "detail-r.png")
 print("assets ->", OUT)
 
 # Versions légères pour le mur de captures (scène finale)
@@ -66,12 +81,3 @@ for name in list(SHOTS) + list(MODALS):
     w = 864
     h = round(im.height * w / im.width)
     im.resize((w, h), Image.LANCZOS).crop((0, 0, w, min(h, 540))).save(OUT / f"wall-{name}.png")
-
-# v2 : fenêtre du Fil d'actualité avec la liste et le panneau évidés (recréés en HTML,
-# la liste peut ainsi reculer en profondeur sans laisser apparaître la capture)
-feed2 = Image.open(OUT / "feed.png").convert("RGBA")
-px = feed2.load()
-for (x0, y0, x1, y1) in ((232, 100, 1010, 866), (1020, 100, 1440, 866)):
-    hole = Image.new("RGBA", ((x1 - x0) * 2, (y1 - y0) * 2), (0, 0, 0, 0))
-    feed2.paste(hole, (x0 * 2, y0 * 2))
-feed2.save(OUT / "feed-base.png")

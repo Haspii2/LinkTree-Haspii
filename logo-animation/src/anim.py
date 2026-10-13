@@ -338,9 +338,3 @@ def render(ctx, t, phase3d=None):
         img = np.clip(render_flat(ctx, t), 0, 1)
     img = grain(ctx, t, img)
     return np.clip(img, 0, 1)
-
-
-def to8(img, t):
-    rng = rng_for(5, int(round(t * 1000)))
-    d = rng.random(img.shape, dtype=np.float32)
-    return np.clip(img * 255.0 + d, 0, 255).astype(np.uint8)

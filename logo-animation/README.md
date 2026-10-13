@@ -7,7 +7,7 @@
 | Définition | 3840 × 2160 (4K UHD) |
 | Cadence | 60 images/s |
 | Durée | 3,00 s, en boucle parfaite (dernière image → première image sans saut) |
-| Codec | H.264 High 4:2:0, CRF 10, BT.709 |
+| Codec | H.264 High@5.2, 4:2:0, CRF 12 (PSNR ≈ 46–47 dB, perte invisible), BT.709, gris parfaitement neutre |
 
 ## Déroulé (calé image par image sur le GIF, 25 i/s → 60 i/s)
 
@@ -33,8 +33,8 @@
 
 ```bash
 pip install numpy scipy opencv-python-headless
-python3 src/render_all.py frames 4        # 180 images PNG 4K (≈ 5 min sur 4 cœurs)
-./src/encode.sh frames logo-animation.mp4
+python3 src/render_all.py frames 4             # 180 images PNG 16 bits en 4K (≈ 3 min sur 4 cœurs)
+python3 src/encode.py frames logo-animation.mp4 12   # H.264 4K 60 i/s ; dernier argument = CRF
 ```
 
 Les réglages se trouvent dans `src/anim.py` (phases à plat, glitch) et `src/scene3d.py` (phase 3D).

@@ -1,4 +1,4 @@
-"""Render every frame of the animation at 3840x2160, 60 fps, as 8-bit PNGs (dithered)."""
+"""Render every frame of the animation at 3840x2160, 60 fps, as 16-bit grey PNGs."""
 import sys, os, time
 import cv2
 cv2.setNumThreads(1)
@@ -22,7 +22,7 @@ def job(n):
     t0 = time.time()
     t = n / FPS
     img = anim.render(_ctx, t)
-    cv2.imwrite(path + '.tmp.png', anim.to8(img, t), [cv2.IMWRITE_PNG_COMPRESSION, 1])
+    cv2.imwrite(path + '.tmp.png', np.round(img * 65535.0).astype(np.uint16), [cv2.IMWRITE_PNG_COMPRESSION, 1])
     os.replace(path + '.tmp.png', path)
     return n, time.time() - t0
 

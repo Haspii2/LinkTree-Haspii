@@ -2,7 +2,7 @@
 # Encode les images rendues (render_all.py) en MP4 4K 60 i/s, H.264 High 4:2:0, qualité quasi sans perte.
 # usage : ./encode.sh <dossier_images> <sortie.mp4>
 set -euo pipefail
-IN="${1:?dossier d'images}"; OUT="${2:?fichier mp4}"
+IN="${1:?dossier des images}"; OUT="${2:?fichier mp4}"
 ffmpeg -y -framerate 60 -i "$IN/f%04d.png" \
   -vf "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p" \
   -c:v libx264 -preset slow -crf 10 -profile:v high -level:v 5.2 \

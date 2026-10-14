@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VYNTI — Live Overlay</title>
+<style>
+:root {--ink:#0b0b0c;--white:#fafafa;--muted:#a2a2a5;--edge:rgba(255,255,255,.17)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.stage{position:fixed;inset:0;pointer-events:none}.overlay{position:absolute;top:32px;right:34px;width:474px;filter:drop-shadow(0 13px 22px rgba(0,0,0,.24));animation:enter .85s cubic-bezier(.2,.8,.2,1) both}
+.main{height:88px;background:linear-gradient(145deg,#19191b,#080809);border:1px solid var(--edge);border-radius:17px;display:flex;align-items:center;padding:12px 16px;position:relative;overflow:hidden;isolation:isolate}
+.main:before{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 15%,rgba(255,255,255,.065) 49%,transparent 70%);transform:translateX(-130%);animation:shine 10s ease-in-out infinite;z-index:-1}
+.logo{width:104px;height:56px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.logo img{max-width:100%;max-height:100%;object-fit:contain}.logo-fallback{font-size:21px;font-weight:900;color:#fff;letter-spacing:-1.5px;display:none}
+.sep{height:42px;width:1px;background:linear-gradient(transparent,#555,transparent);margin:0 19px 0 12px;flex-shrink:0}
+.offer-area{flex:1;min-width:0}.eyebrow{font-size:9px;font-weight:750;letter-spacing:2.05px;color:#939397;margin-bottom:3px}.viewport{height:33px;position:relative;overflow:hidden;mask-image:linear-gradient(to bottom,transparent 0%,black 13%,black 87%,transparent 100%)}.offer{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;gap:10px;opacity:0;transform:translateY(120%);will-change:transform,opacity}.offer.active{opacity:1;transform:translateY(0)}.offer.exit{animation:out .58s cubic-bezier(.72,0,.3,1) forwards}.offer.in{animation:in .58s cubic-bezier(.2,.8,.2,1) forwards}.name{font-size:20px;line-height:1;font-weight:780;letter-spacing:-.8px;color:#fff}.price{white-space:nowrap;display:flex;align-items:baseline;gap:3px}.price strong{font-size:24px;line-height:1;font-weight:780;letter-spacing:-1.1px;color:#fff}.price span{font-size:10px;font-weight:600;color:#aaa}
+.bottom{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:8px 5px 0 0}.status{display:flex;align-items:center;gap:6px;background:#111113;border:1px solid #333337;border-radius:99px;padding:8px 12px;color:#d7d7da;font-size:10px;font-weight:700;letter-spacing:.5px}.dot{width:5px;height:5px;background:#eee;border-radius:50%;animation:pulse 2.2s ease-in-out infinite}.link{display:flex;align-items:center;gap:9px;padding:9px 15px;background:#fafafa;color:#111;border:1px solid #fff;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.15px;box-shadow:0 4px 18px rgba(0,0,0,.15)}.link svg{width:14px;height:14px}.progress{position:absolute;left:0;bottom:0;height:2px;background:#f2f2f2;transform-origin:left;animation:progress 5s linear infinite;opacity:.8}
+@keyframes enter{from{opacity:0;transform:translateY(-16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes out{from{transform:translateY(0);opacity:1}to{transform:translateY(-120%);opacity:0}}@keyframes in{from{transform:translateY(120%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes shine{0%,77%{transform:translateX(-130%)}91%,100%{transform:translateX(130%)}}@keyframes pulse{50%{opacity:.35}}@keyframes progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){*,*:before{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+<div class="stage"><div class="overlay">
+  <div class="main">
+    <div class="logo"><img id="brand" src="https://i.ibb.co/60nRcmh9/logo.png" alt="VYNTI" onerror="this.style.display='none';document.querySelector('.logo-fallback').style.display='block'"><span class="logo-fallback">VYNTI</span></div>
+    <div class="sep"></div>
+    <div class="offer-area"><div class="eyebrow">DÉCOUVREZ NOS OFFRES</div><div class="viewport" id="viewport"><div class="offer active"><span class="name">STARTER</span><span class="price"><strong>10 €</strong><span>/mois</span></span></div></div></div>
+    <div class="progress" id="progress"></div>
+  </div>
+  <div class="bottom"><div class="status"><span class="dot"></span> OFFRES VYNTI</div><div class="link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z"/></svg><span id="website">LIEN EN BIO</span></div></div>
+</div></div>
+<script>
+// PARAMÈTRES — modifie ces valeurs pour personnaliser l'overlay.
+const OFFERS=[{name:'STARTER',price:'10 €'},{name:'PLUS',price:'20 €'},{name:'PRO',price:'70 €'}];
+const INTERVAL_MS=5000;
+const WEBSITE_TEXT='LIEN EN BIO'; // Remplace par ton vrai domaine, par exemple « exemple.fr ».
+document.getElementById('website').textContent=WEBSITE_TEXT;
+let index=0;const viewport=document.getElementById('viewport');
+function renderOffer(offer){const node=document.createElement('div');node.className='offer';const name=document.createElement('span');name.className='name';name.textContent=offer.name;const price=document.createElement('span');price.className='price';const strong=document.createElement('strong');strong.textContent=offer.price;const month=document.createElement('span');month.textContent='/mois';price.append(strong,month);node.append(name,price);return node;}
+setInterval(()=>{const old=viewport.querySelector('.offer.active');index=(index+1)%OFFERS.length;const next=renderOffer(OFFERS[index]);viewport.append(next);requestAnimationFrame(()=>{old.classList.remove('active');old.classList.add('exit');next.classList.add('in');});setTimeout(()=>{old.remove();next.className='offer active';},610);},INTERVAL_MS);
+</script>
+</body></html>

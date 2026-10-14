@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VYNTI — Live Overlay</title>
+<!--
+  Overlay OBS : ajoute une « Source navigateur » en 1920 × 1080 qui pointe vers ce fichier.
+  Le fond est transparent. Les réglages se font dans le bloc CONFIG, en bas du fichier,
+  ou directement dans l'URL de la source, par exemple :
+    vynti_overlay.html?position=bottom-left&scale=1.2&margin=40
+  Pour un aperçu dans un navigateur classique, ajoute ?preview (fond sombre) ou ?preview=light.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap" rel="stylesheet" />
+<style>
+/* Propriétés animables : lumière qui dérive sur la trame, balayage des textes */
+@property --gx { syntax: '<percentage>'; inherits: false; initial-value: 78%; }
+@property --wipe { syntax: '<percentage>'; inherits: false; initial-value: 100%; }
+
+:root {
+  --fg: #fafafa;
+  --fg-2: rgba(250, 250, 250, .64);
+  --fg-3: rgba(250, 250, 250, .4);
+  --ink: #0a0a0b;
+  --w: 420px;       /* largeur de la carte */
+  --pad: 14px;      /* marge intérieure */
+  --tile: 72px;     /* pastille du logo */
+  --gap: 16px;
+  --r: 24px;        /* rayon de la carte ; la pastille suit (rayons concentriques) */
+  --font: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+body {
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+/* Aperçu hors OBS (?preview, ?preview=light) */
+body[data-preview] { background: radial-gradient(120% 90% at 70% 10%, #3a3a3d, #121214 60%, #050506); }
+body[data-preview="light"] { background: radial-gradient(120% 90% at 70% 10%, #ffffff, #d9d9dc 60%, #a9a9ad); }
+
+/* ---------- Composition ---------- */
+.overlay {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  visibility: hidden;
+  pointer-events: none;
+}
+.overlay.is-ready { visibility: visible; }
+.overlay[data-side="left"] { align-items: flex-start; }
+
+/* ---------- Carte ---------- */
+.card {
+  position: relative;
+  display: flex;
+  gap: var(--gap);
+  width: var(--w);
+  height: calc(var(--tile) + var(--pad) * 2);
+  padding: var(--pad);
+  border-radius: var(--r);
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(130% 160% at 0% 0%, #1a1a1c 0%, #0d0d0f 45%, #08080a 100%);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, .55),
+    0 2px 4px rgba(0, 0, 0, .25),
+    0 22px 44px -14px rgba(0, 0, 0, .65);
+  will-change: transform;
+}
+/* Filet dégradé : plus lumineux en haut, comme une arête éclairée */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.07) 48%, rgba(255,255,255,.11));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+/* Trame de points révélée par une lumière douce qui dérive lentement */
+.light {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(220px 120px at var(--gx) 0%, rgba(255,255,255,.075), transparent 72%),
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.12) 1px, transparent 1.4px) 0 0 / 10px 10px;
+  -webkit-mask-image: radial-gradient(260px 130px at var(--gx) 0%, #000, transparent 75%);
+          mask-image: radial-gradient(260px 130px at var(--gx) 0%, #000, transparent 75%);
+  animation: drift 18s ease-in-out infinite alternate;
+}
+@keyframes drift { from { --gx: 82%; } to { --gx: 30%; } }
+
+/* ---------- Logo ---------- */
+.mark {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--tile);
+  height: var(--tile);
+  border-radius: calc(var(--r) - var(--pad));
+  background: linear-gradient(180deg, #1e1e21, #111113);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.08),
+    inset 0 1px 0 rgba(255,255,255,.1),
+    0 1px 2px rgba(0,0,0,.5);
+}
+.mark svg { width: 38px; height: auto; overflow: visible; }
+.mark path { fill: var(--fg); transform-box: fill-box; transform-origin: 50% 50%; }
+
+/* ---------- Contenu ---------- */
+.body {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: calc(var(--w) - var(--tile) - var(--pad) * 2 - var(--gap));
+  padding: 2px 2px 4px 0;
+}
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  line-height: 14px;
+  font-weight: 500;
+  letter-spacing: .02em;
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+.brand { color: var(--fg); font-weight: 650; letter-spacing: .18em; }
+.sep { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,.3); }
+.count { display: flex; align-items: baseline; gap: 3px; margin-left: auto; font-variant-numeric: tabular-nums; }
+.count .roller { color: var(--fg-2); }
+
+.offer { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.plan {
+  display: grid;
+  justify-items: start;
+  min-width: 0;
+  font-size: 26px;
+  line-height: 30px;
+  font-weight: 600;
+  letter-spacing: -.025em;
+}
+.price { display: flex; align-items: baseline; white-space: nowrap; }
+.amount { font-size: 30px; font-weight: 600; letter-spacing: -.03em; }
+.currency { margin-left: .2em; font-size: 20px; font-weight: 500; color: rgba(250,250,250,.86); }
+.period { margin-left: 6px; font-size: 12px; font-weight: 500; color: var(--fg-3); letter-spacing: 0; }
+
+/* Textes empilés pour les fondus croisés + balayage doux de gauche à droite */
+.swap > span {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  padding: 6px 10px;
+  margin: -6px -10px;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--wipe) * 1.4 - 40%), transparent calc(var(--wipe) * 1.4));
+          mask-image: linear-gradient(90deg, #000 calc(var(--wipe) * 1.4 - 40%), transparent calc(var(--wipe) * 1.4));
+  will-change: transform, opacity, filter;
+}
+
+/* Compteur à rouleaux : chiffres à chasse fixe, fondu en haut et en bas */
+.roller { display: inline-block; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.slot {
+  position: relative;
+  display: inline-block;
+  line-height: 1.5;
+  vertical-align: baseline;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 25%, #000 75%, transparent);
+          mask-image: linear-gradient(180deg, transparent, #000 25%, #000 75%, transparent);
+}
+.slot.is-digit .ghost { visibility: hidden; }
+.reel { position: absolute; top: 0; left: 0; width: 100%; will-change: transform; }
+.reel span { display: block; text-align: center; }
+
+/* Progression : un segment par offre */
+.progress { display: flex; gap: 6px; }
+.seg {
+  position: relative;
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(255,255,255,.12);
+}
+.seg i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--fg);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+/* Faisceau lumineux qui parcourt le contour, une fois par cycle */
+.beam {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  opacity: 0;
+  pointer-events: none;
+}
+.beam rect { fill: none; stroke: #fff; stroke-linecap: round; stroke-width: 1; }
+
+/* ---------- Bouton ---------- */
+.cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 6px 0 16px;
+  border-radius: 999px;
+  background: var(--fg);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.08),
+    0 1px 2px rgba(0,0,0,.2),
+    0 12px 26px -10px rgba(0,0,0,.5);
+  will-change: transform, opacity;
+}
+.cta-text { display: grid; justify-items: start; overflow: hidden; padding: 8px 0; margin: -8px 0; }
+.cta-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--fg);
+}
+.cta-icon svg { width: 12px; height: 12px; }
+
+@media (prefers-reduced-motion: reduce) { .light { animation: none; } }
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay">
+  <section class="card" id="card">
+    <div class="light"></div>
+
+    <div class="mark" aria-label="VYNTI">
+      <svg viewBox="-1 20 260 217" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M15.60 21L73.93 21A31 31 0 0 1 100.41 68.12L59.80 134.83A1.6 1.6 0 0 1 57.07 134.83L2.20 44.88A15.7 15.7 0 0 1 15.60 21Z"/>
+        <path d="M149.25 21L234.39 21A23.3 23.3 0 0 1 254.26 56.47L212.38 124.87A1.6 1.6 0 0 1 209.65 124.87L147.97 23.28A1.5 1.5 0 0 1 149.25 21Z"/>
+        <path d="M60.76 137.60L107.87 137.60A3 3 0 0 1 110.42 139.02L133.15 175.75A0.8 0.8 0 0 0 134.49 175.78L159.52 138.92A3 3 0 0 1 162 137.60L202.47 137.60A1.2 1.2 0 0 1 203.49 139.44L149.01 225.66A21.5 21.5 0 0 1 112.51 225.42L59.74 139.43A1.2 1.2 0 0 1 60.76 137.60Z"/>
+      </svg>
+    </div>
+
+    <div class="body">
+      <div class="meta" id="meta">
+        <span class="brand">VYNTI</span>
+        <span class="sep"></span>
+        <span id="label"></span>
+        <span class="count"><span class="roller" id="count"></span><span>/</span><span id="total"></span></span>
+      </div>
+      <div class="offer">
+        <div class="plan swap" id="plan"></div>
+        <div class="price">
+          <span class="amount roller" id="amount"></span>
+          <span class="currency" id="currency"></span>
+          <span class="period" id="period"></span>
+        </div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <svg class="beam" id="beam" aria-hidden="true">
+      <defs><filter id="beamGlow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="1.8"/></filter></defs>
+      <rect x=".5" y=".5" data-len=".22" stroke-opacity=".1"/>
+      <rect x=".5" y=".5" data-len=".09" stroke-opacity=".28"/>
+      <rect x=".5" y=".5" data-len=".03" stroke-opacity=".9" stroke-width="2.5" filter="url(#beamGlow)"/>
+      <rect x=".5" y=".5" data-len=".03" stroke-opacity="1" stroke-width="1.25"/>
+    </svg>
+  </section>
+
+  <div class="cta" id="cta">
+    <span class="cta-text swap" id="ctaText"></span>
+    <span class="cta-icon" id="ctaIcon">
+      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l5-5M4.5 3.5h4v4"/></svg>
+    </span>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ================================================================
+   PARAMÈTRES — modifie ces valeurs pour personnaliser l'overlay.
+   ================================================================ */
+const CONFIG = {
+  offers: [
+    { name: 'Starter', price: 10 },
+    { name: 'Plus',    price: 20 },
+    { name: 'Pro',     price: 70 },
+  ],
+  currency: '€',
+  period: '/mois',
+  label: 'Nos offres',
+  interval: 5000,                    // durée d'affichage de chaque offre (ms)
+  cta: ['Lien en bio', 'vynti.fr'],  // textes du bouton, affichés en alternance (un seul = texte fixe)
+  ctaInterval: 8000,                 // temps entre deux textes du bouton (ms)
+  position: 'top-right',             // top-right · top-left · bottom-right · bottom-left
+  margin: 32,                        // distance au bord de l'écran (px)
+  scale: 1,                          // taille globale : 1 = 100 %, 1.25 = 125 %…
+};
+
+/* Réglages possibles depuis l'URL de la source OBS */
+const query = new URLSearchParams(location.search);
+if (query.has('position')) CONFIG.position = query.get('position');
+for (const key of ['scale', 'margin', 'interval']) {
+  const value = parseFloat(query.get(key));
+  if (Number.isFinite(value)) CONFIG[key] = value;
+}
+if (query.has('preview')) document.body.dataset.preview = query.get('preview') || 'dark';
+
+/* Courbes — reprises du vocabulaire de mouvement VYNTI */
+const EASE = {
+  out:    'cubic-bezier(.16, 1, .3, 1)',   // entrées, compteurs
+  text:   'cubic-bezier(.22, 1, .36, 1)',  // textes
+  exit:   'cubic-bezier(.4, 0, 1, 1)',     // sorties, d'un bloc
+  inOut:  'cubic-bezier(.65, 0, .35, 1)',  // tracés, déploiement
+  spring: 'cubic-bezier(.2, 1.35, .4, 1)', // pose avec léger dépassement
+};
+
+const $ = (id) => document.getElementById(id);
+const overlay = $('overlay');
+const card = $('card');
+const pieces = [...card.querySelectorAll('.mark path')];
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const isDigit = (c) => c >= '0' && c <= '9';
+const pad2 = (n) => String(n).padStart(2, '0');
+const formatPrice = (p) => typeof p === 'number'
+  ? p.toLocaleString('fr-FR', { maximumFractionDigits: 2 })
+  : String(p).replace(/\s*€\s*$/, '').trim().replace(/\s/g, '\u202f'); // espace fine insécable
+
+/* ---------- Placement ---------- */
+(function place() {
+  const [v, h] = String(CONFIG.position).split('-');
+  const vertical = v === 'bottom' ? 'bottom' : 'top';
+  const side = h === 'left' ? 'left' : 'right';
+  overlay.style[vertical] = CONFIG.margin + 'px';
+  overlay.style[side] = CONFIG.margin + 'px';
+  overlay.style.transform = `scale(${CONFIG.scale})`;
+  overlay.style.transformOrigin = `${vertical} ${side}`;
+  overlay.dataset.side = side;
+})();
+
+/* ---------- Compteur à rouleaux ---------- */
+const CELLS = 20; // 0–9 deux fois : permet un tour complet à l'apparition
+const cellY = (c) => `translateY(${(-c * 100) / CELLS}%)`;
+
+function createSlot(ch) {
+  const slot = document.createElement('span');
+  slot.className = 'slot';
+  slot.ch = ch;
+  const ghost = document.createElement('span');
+  ghost.className = 'ghost';
+  ghost.textContent = isDigit(ch) ? '0' : ch;
+  slot.append(ghost);
+  if (isDigit(ch)) {
+    slot.classList.add('is-digit');
+    const reel = document.createElement('span');
+    reel.className = 'reel';
+    for (let i = 0; i < CELLS; i++) {
+      const cell = document.createElement('span');
+      cell.textContent = i % 10;
+      reel.append(cell);
+    }
+    slot.append(reel);
+    slot.reel = reel;
+    slot.cell = +ch;
+    reel.style.transform = cellY(slot.cell);
+  }
+  return slot;
+}
+
+function rollReel(slot, digit, { delay = 0, duration = 900, spin = false, animate = true } = {}) {
+  const from = slot.cell;
+  const to = digit + (spin ? 10 : 0);
+  slot.cell = digit;
+  if (!animate || from === to) { slot.reel.style.transform = cellY(digit); return; }
+  slot.reel.getAnimations().forEach((a) => a.cancel());
+  slot.reel.style.transform = cellY(to);
+  const anim = slot.reel.animate([
+    { transform: cellY(from), filter: 'blur(0px)' },
+    { filter: 'blur(1.2px)', offset: .3 },
+    { transform: cellY(to), filter: 'blur(0px)' },
+  ], { duration, delay, easing: EASE.out, fill: 'backwards' });
+  // Après un tour complet, on revient sans saut visible sur la première série.
+  if (to !== digit) anim.finished.then(() => { slot.reel.style.transform = cellY(digit); }, () => {});
+}
+
+function setRoller(root, text, { delay = 0, stagger = 70, duration = 900, spin = false, animate = true } = {}) {
+  const chars = [...text];
+  const old = root.slots || [];
+  const n = Math.max(old.length, chars.length);
+  const next = [];
+  let right = null; // emplacement déjà en place à droite
+
+  // On aligne à droite : les unités restent sous les unités.
+  for (let r = 0; r < n; r++) {
+    const slot = old[old.length - 1 - r];
+    const ch = chars[chars.length - 1 - r];
+    const at = delay + (n - 1 - r) * stagger; // de gauche à droite
+    const lead = r === chars.length - 1;
+
+    if (slot && ch !== undefined && slot.reel && isDigit(ch)) {
+      rollReel(slot, +ch, { delay: at, duration, spin: spin && !lead, animate });
+      next.unshift(slot); right = slot; continue;
+    }
+    if (slot && ch !== undefined && !slot.reel && slot.ch === ch) {
+      next.unshift(slot); right = slot; continue;
+    }
+    if (slot) {
+      if (animate) {
+        slot.animate([{ width: slot.offsetWidth + 'px', opacity: 1 }, { width: '0px', opacity: 0 }],
+          { duration: duration * .6, delay: at, easing: EASE.out, fill: 'forwards' })
+          .finished.then(() => slot.remove(), () => {});
+      } else slot.remove();
+    }
+    if (ch !== undefined) {
+      const fresh = createSlot(isDigit(ch) ? '0' : ch);
+      const ref = (slot && slot.isConnected) ? slot : right;
+      if (ref) root.insertBefore(fresh, ref); else root.prepend(fresh);
+      if (animate) {
+        fresh.animate([{ width: '0px', opacity: 0 }, { width: fresh.offsetWidth + 'px', opacity: 1 }],
+          { duration: duration * .6, delay: at, easing: EASE.out, fill: 'backwards' });
+      }
+      if (fresh.reel) rollReel(fresh, +ch, { delay: at, duration, animate });
+      next.unshift(fresh); right = fresh;
+    }
+  }
+  root.slots = next;
+}
+
+/* ---------- Textes : sortie d'un bloc, entrée floue avec balayage ---------- */
+function swapText(container, text, { delay = 120, exit = 260, animate = true } = {}) {
+  [...container.children].filter((el) => !el.leaving).forEach((el) => {
+    el.leaving = true;
+    if (!animate) { el.remove(); return; }
+    el.animate([
+      { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+      { opacity: 0, transform: 'translateY(-8px)', filter: 'blur(4px)' },
+    ], { duration: exit, easing: EASE.exit, fill: 'forwards' }).finished.then(() => el.remove(), () => {});
+  });
+  const el = document.createElement('span');
+  el.textContent = text;
+  container.append(el);
+  if (animate) {
+    el.animate([
+      { opacity: 0, transform: 'translateY(10px)', filter: 'blur(8px)', '--wipe': '0%' },
+      { opacity: 1, transform: 'none', filter: 'blur(0px)', '--wipe': '100%' },
+    ], { duration: 720, delay, easing: EASE.text, fill: 'backwards' });
+  }
+  return el;
+}
+
+/* ---------- Progression ---------- */
+const fills = CONFIG.offers.map(() => {
+  const seg = document.createElement('span');
+  seg.className = 'seg';
+  const fill = document.createElement('i');
+  seg.append(fill);
+  $('progress').append(seg);
+  return fill;
+});
+
+function runProgress(index, duration = CONFIG.interval) {
+  fills.forEach((fill, k) => {
+    fill.getAnimations().forEach((a) => a.cancel());
+    fill.style.transform = k <= index ? 'scaleX(1)' : 'scaleX(0)';
+  });
+  fills[index].animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
+    { duration, easing: 'linear', fill: 'backwards' });
+}
+
+async function restartProgress() {
+  const fade = 420;
+  fills.forEach((fill) => {
+    fill.getAnimations().forEach((a) => a.cancel());
+    fill.style.transform = 'scaleX(1)';
+    fill.animate([{ opacity: 1 }, { opacity: 0 }], { duration: fade, easing: EASE.exit, fill: 'forwards' });
+  });
+  await wait(fade);
+  runProgress(0, CONFIG.interval - fade);
+}
+
+/* ---------- Faisceau sur le contour ---------- */
+function runBeam(duration = 2400) {
+  const beam = $('beam');
+  const w = card.offsetWidth - 1;
+  const h = card.offsetHeight - 1;
+  const r = Math.max(0, parseFloat(getComputedStyle(card).borderTopLeftRadius) - .5);
+  const perimeter = 2 * (w + h) - (8 - 2 * Math.PI) * r;
+  beam.querySelectorAll('rect').forEach((rect) => {
+    rect.setAttribute('width', w);
+    rect.setAttribute('height', h);
+    rect.setAttribute('rx', r);
+    const len = perimeter * parseFloat(rect.dataset.len);
+    rect.style.strokeDasharray = `${len}px ${perimeter - len}px`;
+    rect.animate([{ strokeDashoffset: len + 'px' }, { strokeDashoffset: (len - perimeter) + 'px' }],
+      { duration, easing: EASE.inOut, fill: 'forwards' });
+  });
+  beam.animate([{ opacity: 0 }, { opacity: 1, offset: .12 }, { opacity: 1, offset: .72 }, { opacity: 0 }],
+    { duration, easing: 'linear' });
+}
+
+/* ---------- Logo ---------- */
+const PIECE_FROM = [
+  'translate(-70%, -50%) rotate(-14deg)',
+  'translate(70%, -50%) rotate(14deg)',
+  'translate(0, 80%)',
+];
+function buildLogo(delay) {
+  pieces.forEach((piece, i) => {
+    piece.animate([
+      { transform: PIECE_FROM[i], opacity: 0 },
+      { opacity: 1, offset: .4 },
+      { transform: 'none', opacity: 1 },
+    ], { duration: 560, delay: delay + i * 120, easing: EASE.spring, fill: 'backwards' });
+  });
+}
+const PIECE_BREATH = ['translate(-7%, -7%)', 'translate(7%, -7%)', 'translate(0, 8%)'];
+function breatheLogo() {
+  pieces.forEach((piece, i) => {
+    piece.animate([
+      { transform: 'none', easing: 'cubic-bezier(.3, 0, .2, 1)' },
+      { transform: PIECE_BREATH[i], offset: .35, easing: EASE.spring },
+      { transform: 'none' },
+    ], { duration: 900, delay: i * 70 });
+  });
+}
+
+/* ---------- Bouton ---------- */
+const ctaText = $('ctaText');
+function nudgeArrow(delay = 0) {
+  $('ctaIcon').firstElementChild.animate([
+    { transform: 'translate(0, 0)', easing: 'cubic-bezier(.5, 0, .75, 0)' },
+    { transform: 'translate(170%, -170%)', offset: .42 },
+    { transform: 'translate(-170%, 170%)', offset: .421, easing: EASE.out },
+    { transform: 'translate(0, 0)' },
+  ], { duration: 860, delay });
+}
+function swapCta(text) {
+  const from = ctaText.offsetWidth;
+  const el = swapText(ctaText, text, { delay: 170, exit: 200 });
+  const style = getComputedStyle(el);
+  const to = el.offsetWidth + parseFloat(style.marginLeft) + parseFloat(style.marginRight);
+  // Le bouton change de largeur une fois l'ancien texte presque effacé.
+  ctaText.style.width = to + 'px';
+  ctaText.animate([{ width: from + 'px' }, { width: to + 'px' }],
+    { duration: 620, delay: 150, easing: EASE.out, fill: 'backwards' });
+  nudgeArrow(160);
+}
+
+/* ---------- Offres ---------- */
+let current = 0;
+function showOffer(index, { delay = 0, intro = false } = {}) {
+  const offer = CONFIG.offers[index];
+  swapText($('plan'), offer.name, { delay: delay + (intro ? 0 : 120) });
+  setRoller($('amount'), formatPrice(offer.price), { delay: delay + (intro ? 0 : 60), spin: intro, duration: intro ? 1150 : 900 });
+  setRoller($('count'), pad2(index + 1), { delay: delay + 80, stagger: 40, duration: 700 });
+}
+
+function next() {
+  const n = CONFIG.offers.length;
+  current = (current + 1) % n;
+  showOffer(current);
+  if (current === 0) {
+    restartProgress();
+    runBeam();
+    breatheLogo();
+  } else {
+    runProgress(current);
+  }
+}
+
+/* ---------- Séquence d'ouverture ---------- */
+async function intro() {
+  const texts = CONFIG.offers.map((o) => formatPrice(o.price));
+  $('label').textContent = CONFIG.label;
+  $('total').textContent = pad2(CONFIG.offers.length);
+  $('currency').textContent = CONFIG.currency;
+  $('period').textContent = CONFIG.period;
+  if (CONFIG.offers.length < 2) { $('progress').style.visibility = 'hidden'; card.querySelector('.count').style.visibility = 'hidden'; }
+  swapText(ctaText, CONFIG.cta[0] || '', { animate: false });
+  setRoller($('amount'), texts[0].replace(/\d/g, '0'), { animate: false });
+  setRoller($('count'), '00', { animate: false });
+
+  const full = card.offsetWidth;
+  const compact = card.querySelector('.mark').offsetWidth + parseFloat(getComputedStyle(card).paddingLeft) * 2;
+  overlay.classList.add('is-ready');
+
+  // 1. La pastille apparaît, compacte.
+  card.animate([
+    { opacity: 0, transform: 'scale(.86)', filter: 'blur(10px)' },
+    { opacity: 1, transform: 'scale(1.03)', filter: 'blur(0px)', offset: .55 },
+    { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+  ], { duration: 640, easing: EASE.out, fill: 'backwards' });
+
+  // 2. Le logo se construit par ses trois triangles.
+  buildLogo(200);
+
+  // 3. La carte se déploie.
+  const expandAt = 1000;
+  card.animate([{ width: compact + 'px' }, { width: full + 'px' }],
+    { duration: 900, delay: expandAt, easing: EASE.inOut, fill: 'backwards' });
+
+  // 4. Le contenu arrive en cascade.
+  const contentAt = expandAt + 520;
+  $('meta').animate([
+    { opacity: 0, transform: 'translateY(6px)', filter: 'blur(6px)' },
+    { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+  ], { duration: 640, delay: contentAt, easing: EASE.text, fill: 'backwards' });
+  showOffer(0, { delay: contentAt + 80, intro: true });
+  [...$('progress').children].forEach((seg, k) => {
+    seg.animate([{ clipPath: 'inset(0 100% 0 0)', opacity: 0 }, { clipPath: 'inset(0 0% 0 0)', opacity: 1 }],
+      { duration: 700, delay: contentAt + 200 + k * 90, easing: EASE.out, fill: 'backwards' });
+  });
+
+  // 5. Le bouton se pose sous la carte.
+  const ctaAt = contentAt + 380;
+  $('cta').animate([
+    { opacity: 0, transform: 'translateY(-10px) scale(.94)', filter: 'blur(8px)' },
+    { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+  ], { duration: 760, delay: ctaAt, easing: EASE.out, fill: 'backwards' });
+  nudgeArrow(ctaAt + 520);
+
+  await wait(contentAt + 600);
+  runProgress(0);
+  if (CONFIG.offers.length > 1) setInterval(next, CONFIG.interval);
+  await wait(300);
+  runBeam();
+
+  if (CONFIG.cta.length > 1) {
+    let ctaIndex = 0;
+    await wait(CONFIG.ctaInterval / 2);
+    swapCta(CONFIG.cta[ctaIndex = (ctaIndex + 1) % CONFIG.cta.length]);
+    setInterval(() => swapCta(CONFIG.cta[ctaIndex = (ctaIndex + 1) % CONFIG.cta.length]), CONFIG.ctaInterval);
+  } else {
+    setInterval(() => nudgeArrow(), CONFIG.ctaInterval);
+  }
+}
+
+// On attend la police (au plus 1,5 s) pour que les mesures soient justes.
+Promise.race([document.fonts ? document.fonts.ready : Promise.resolve(), wait(1500)]).then(intro);
+</script>
+</body>
+</html>

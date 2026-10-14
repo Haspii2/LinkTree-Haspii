@@ -421,6 +421,12 @@
     bannerVideo: "https://res.cloudinary.com/dxtrnniue/video/upload/v1782597623/ezgif-3ef5e2a7647a2ced_kzrajc.mp4",
     avatarVideo: "https://res.cloudinary.com/dxtrnniue/video/upload/v1778969195/CAEF1847-3781-4D58-A419-69E07AFBBC4E_qupid2.mp4",
 
+    // Musique : démarre au clic sur « click to enter » ("" pour aucune musique)
+    audio: {
+      src: "https://res.cloudinary.com/dxtrnniue/video/upload/v1779022578/MeleonK_PTSD_Clip_Officiel_ozS0pdIZwmk_hhcqqj.webm",
+      volume: 0.8,
+    },
+
     // Serveur Discord
     discord: {
       inviteCode: "ae9eZddbv4",            // pour les stats live
@@ -650,6 +656,31 @@
   }
 
   /* ================================================================
+     Musique — une seule instance, lancée par le clic d'entrée (les
+     navigateurs bloquent le son tant que le visiteur n'a pas interagi)
+     ================================================================ */
+  const music = (function initMusic() {
+    const src = CONFIG.audio && CONFIG.audio.src;
+    if (!src) return null;
+    const a = new Audio();
+    // WebM/Opus si le navigateur sait le lire, sinon la même piste en MP3
+    // (Safari/iOS) : Cloudinary la convertit à la volée, seule l'extension change
+    const mp3 = src.includes("res.cloudinary.com") && /\.webm$/i.test(src) && !a.canPlayType('audio/webm; codecs="opus"');
+    a.src = mp3 ? src.replace(/\.webm$/i, ".mp3") : src;
+    a.loop = true;
+    a.preload = "auto";
+    a.volume = CONFIG.audio.volume;
+    return a;
+  })();
+
+  function startMusic() {
+    // déjà en lecture : on ne relance jamais, le son ne peut pas se superposer
+    if (!music || !music.paused) return;
+    const p = music.play();
+    if (p && p.catch) p.catch(() => {}); // lecture refusée : la page reste utilisable
+  }
+
+  /* ================================================================
      Intro
      ================================================================ */
   const intro = $("intro");
@@ -661,6 +692,7 @@
     const body = document.body;
     intro.classList.add("leaving");
     body.classList.add("entered");
+    startMusic(); // appelé directement dans le clic : condition des navigateurs pour autoriser le son
     setTimeout(() => body.classList.add("revealed"), 300);
     setTimeout(() => body.classList.add("settled"), 1850); // fin de l'agrandissement
     setTimeout(startTypewriter, 500);

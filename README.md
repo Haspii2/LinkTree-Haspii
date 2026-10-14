@@ -14,6 +14,7 @@ Tout se règle dans le bloc `CONFIG` en haut du `<script>` dans [index.html](ind
 | `typewriter` | Phrases de la machine à écrire |
 | `backgroundVideo`, `bannerVideo`, `avatarVideo` | URLs des vidéos (Cloudinary ou lien direct .mp4). `bannerVideo: ""` pour une carte sans bannière |
 | `overlay` | Pluie de billets au-dessus de la carte : `src` (vidéo locale), `keyColor` (couleur rendue transparente), `tolerance`/`softness` (réglage du keying). `src: ""` pour désactiver |
+| `audio` | Musique lancée au clic sur « click to enter » : `src` (WebM, avec repli MP3 automatique pour Safari/iOS si le fichier est sur Cloudinary), `volume`. `src: ""` pour aucune musique |
 | `discord` | Code d'invitation (stats live), nom, logo, valeurs de secours |
 | `socials` | Liste des réseaux — types dispo : `discord`, `telegram`, `github`, `tiktok`, `instagram`, `youtube`, `x`, `mail`, `monero` |
 | `viewsBase` | Base du compteur de vues (incrément local par visiteur) |

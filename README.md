@@ -1,6 +1,6 @@
 # HASPII — Bio Page
 
-Page bio au style d'akio.cash : fond vidéo plein écran, écran "click to enter" flouté, carte en verre transparent qui s'incline avec la souris, bannière vidéo fondue dans la carte, stats Discord live. Typographie : police système + [Technor](https://www.fontshare.com/fonts/technor) (Fontshare) pour la machine à écrire et le bloc Discord.
+Page bio : fond vidéo plein écran, écran "click to enter" flouté, carte en verre transparent qui s'incline avec la souris, bannière vidéo fondue dans la carte, stats Discord live. Typographie : police système + [Technor](https://www.fontshare.com/fonts/technor) (Fontshare) pour la machine à écrire et le bloc Discord.
 
 **Stack : un seul fichier `index.html`** (HTML/CSS/JS vanilla, zéro build, zéro dépendance).
 

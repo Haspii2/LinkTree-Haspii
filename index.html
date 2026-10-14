@@ -18,12 +18,12 @@
   <link rel="preconnect" href="https://api.fontshare.com" />
   <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
   <link rel="preconnect" href="https://res.cloudinary.com" />
-  <!-- Technor (Fontshare) : la police d'akio.cash pour la machine à écrire et le bloc Discord -->
+  <!-- Technor (Fontshare) : police de la machine à écrire et du bloc Discord -->
   <link href="https://api.fontshare.com/v2/css?f[]=technor@400,600&amp;display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* Direction artistique calquée sur akio.cash : police système + Technor,
+    /* Direction artistique : police système + Technor,
        verre sans teinte, bordures fines et nettes, accents verts façon Discord */
     :root {
       --bg: #000;
@@ -87,7 +87,7 @@
     .bg.is-loaded video { opacity: 1; }
 
     /* ============ SCÈNE ============ */
-    /* la carte apparaît en fondu au clic (500 ms), comme sur akio.cash */
+    /* la carte apparaît en fondu au clic (500 ms) */
     .scene {
       position: relative; z-index: 10;
       min-height: 100vh; min-height: 100dvh;
@@ -653,7 +653,7 @@
      Intro
      ================================================================ */
   const intro = $("intro");
-  /* Chorégraphie d'akio.cash : le flou de l'intro se dissout pendant que la
+  /* Chorégraphie d'entrée : le flou de l'intro se dissout pendant que la
      carte apparaît en fondu (500 ms) ; 300 ms plus tard, le nom glisse depuis
      la gauche et les réseaux descendent pendant que la carte s'agrandit. */
   function enterSite() {
@@ -696,7 +696,7 @@
   }
 
   /* ================================================================
-     Tilt 3D sur la carte (réglages d'akio.cash) : ±7° à l'horizontale,
+     Tilt 3D sur la carte : ±7° à l'horizontale,
      moitié moins à la verticale, perspective 1200px, retour à plat quand
      la souris quitte la fenêtre
      ================================================================ */
@@ -716,7 +716,7 @@
       if (!e.relatedTarget) { s.tx = 0; s.ty = 0; }
     });
     (function loop() {
-      // suit la souris presque instantanément (akio : transition de 50 ms),
+      // suit la souris presque instantanément,
       // avec juste assez de lissage pour gommer les à-coups
       const settled = Math.abs(s.tx - s.x) < 0.002 && Math.abs(s.ty - s.y) < 0.002;
       if (!settled) {

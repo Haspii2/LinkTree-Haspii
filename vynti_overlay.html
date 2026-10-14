@@ -15,8 +15,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap" rel="stylesheet" />
 <style>
-/* Propriétés animables : lumière qui dérive sur la trame, balayage des textes */
-@property --gx { syntax: '<percentage>'; inherits: false; initial-value: 78%; }
+/* Propriétés animables : projecteur qui glisse sur l'arête, balayage des textes */
+@property --gx { syntax: '<percentage>'; inherits: true; initial-value: 72%; }
 @property --wipe { syntax: '<percentage>'; inherits: false; initial-value: 100%; }
 
 :root {
@@ -92,19 +92,35 @@ body[data-preview="light"] { background: radial-gradient(120% 90% at 70% 10%, #f
           mask-composite: exclude;
   pointer-events: none;
 }
-/* Trame de points révélée par une lumière douce qui dérive lentement */
-.light {
+/* Ambiance : éclairage de studio, deux sources douces qui glissent en sens opposés */
+.ambient {
   position: absolute;
   inset: 0;
   z-index: 0;
+  pointer-events: none;
   background:
-    radial-gradient(220px 120px at var(--gx) 0%, rgba(255,255,255,.075), transparent 72%),
-    radial-gradient(circle at 1px 1px, rgba(255,255,255,.12) 1px, transparent 1.4px) 0 0 / 10px 10px;
-  -webkit-mask-image: radial-gradient(260px 130px at var(--gx) 0%, #000, transparent 75%);
-          mask-image: radial-gradient(260px 130px at var(--gx) 0%, #000, transparent 75%);
-  animation: drift 18s ease-in-out infinite alternate;
+    radial-gradient(180px 105px at var(--gx) -10%, rgba(255,255,255,.14), rgba(255,255,255,.045) 50%, transparent 78%),
+    radial-gradient(240px 110px at calc(100% - var(--gx)) 118%, rgba(255,255,255,.07), transparent 72%);
+  animation: drift 16s ease-in-out infinite alternate;
 }
-@keyframes drift { from { --gx: 82%; } to { --gx: 30%; } }
+/* Reflets nets sur les arêtes, là où tombent les lumières */
+.ambient::before,
+.ambient::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+.ambient::before {
+  top: 0;
+  background: linear-gradient(90deg, transparent calc(var(--gx) - 120px), rgba(255,255,255,.85) var(--gx), transparent calc(var(--gx) + 120px));
+}
+.ambient::after {
+  bottom: 0;
+  background: linear-gradient(90deg, transparent calc(100% - var(--gx) - 110px), rgba(255,255,255,.28) calc(100% - var(--gx)), transparent calc(100% - var(--gx) + 110px));
+}
+@keyframes drift { from { --gx: 80%; } to { --gx: 32%; } }
 
 /* ---------- Logo ---------- */
 .mark {
@@ -122,8 +138,17 @@ body[data-preview="light"] { background: radial-gradient(120% 90% at 70% 10%, #f
     inset 0 1px 0 rgba(255,255,255,.1),
     0 1px 2px rgba(0,0,0,.5);
 }
+/* Reflet de la pastille, qui suit l'inclinaison du logo */
+.mark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(56px 38px at var(--lx, 50%) 0%, rgba(255,255,255,.11), transparent 75%);
+  pointer-events: none;
+}
 .mark svg { width: 38px; height: auto; overflow: visible; }
-.mark path { fill: var(--fg); transform-box: fill-box; transform-origin: 50% 50%; }
+.mark path { fill: url(#vSheen); transform-box: fill-box; transform-origin: 50% 50%; }
 
 /* ---------- Contenu ---------- */
 .body {
@@ -256,16 +281,28 @@ body[data-preview="light"] { background: radial-gradient(120% 90% at 70% 10%, #f
 }
 .cta-icon svg { width: 12px; height: 12px; }
 
-@media (prefers-reduced-motion: reduce) { .light { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ambient { animation: none; } }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Reflet du logo : blanc au centre, gris perle sur les bords ; il glisse avec l'inclinaison -->
+    <linearGradient id="vSheen" gradientUnits="userSpaceOnUse" x1="-70" y1="20" x2="330" y2="237">
+      <stop offset="0" stop-color="#dadade"/>
+      <stop offset=".4" stop-color="#f5f5f7"/>
+      <stop offset=".5" stop-color="#ffffff"/>
+      <stop offset=".6" stop-color="#f5f5f7"/>
+      <stop offset="1" stop-color="#d6d6db"/>
+    </linearGradient>
+  </defs>
+</svg>
 <div class="overlay" id="overlay">
   <section class="card" id="card">
-    <div class="light"></div>
+    <div class="ambient" aria-hidden="true"></div>
 
     <div class="mark" aria-label="VYNTI">
-      <svg viewBox="-1 20 260 217" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <svg id="logo" viewBox="-1 20 260 217" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M15.60 21L73.93 21A31 31 0 0 1 100.41 68.12L59.80 134.83A1.6 1.6 0 0 1 57.07 134.83L2.20 44.88A15.7 15.7 0 0 1 15.60 21Z"/>
         <path d="M149.25 21L234.39 21A23.3 23.3 0 0 1 254.26 56.47L212.38 124.87A1.6 1.6 0 0 1 209.65 124.87L147.97 23.28A1.5 1.5 0 0 1 149.25 21Z"/>
         <path d="M60.76 137.60L107.87 137.60A3 3 0 0 1 110.42 139.02L133.15 175.75A0.8 0.8 0 0 0 134.49 175.78L159.52 138.92A3 3 0 0 1 162 137.60L202.47 137.60A1.2 1.2 0 0 1 203.49 139.44L149.01 225.66A21.5 21.5 0 0 1 112.51 225.42L59.74 139.43A1.2 1.2 0 0 1 60.76 137.60Z"/>
@@ -557,6 +594,59 @@ function breatheLogo() {
   });
 }
 
+/* Logo vivant : une lente inclinaison en perspective, calculée sur les contours vectoriels
+   (le logo reste net), avec les deux triangles du haut en léger relief devant le chevron. */
+const LOGO_POINTS = [
+  '2.2,44.9 1.2,43 0.5,41.1 0.1,39.1 -0.1,37 0,34.9 0.4,32.9 1,30.9 1.9,29 3,27.3 4.4,25.7 6,24.3 7.7,23.2 9.5,22.2 11.5,21.5 13.5,21.1 15.6,21 73.9,21 78,21.3 82,22.1 85.9,23.4 89.6,25.2 93,27.5 96,30.3 98.7,33.4 101,36.8 102.7,40.5 104,44.4 104.7,48.4 104.9,52.5 104.6,56.6 103.7,60.6 102.3,64.5 100.4,68.1 59.8,134.8 58.4,135.6 57.1,134.8',
+  '148,23.3 147.9,21.8 149.3,21 234.4,21 237.5,21.2 240.5,21.8 243.4,22.8 246.2,24.2 248.7,25.9 251,28 253,30.3 254.7,32.9 256,35.7 257,38.6 257.5,41.7 257.7,44.7 257.4,47.8 256.8,50.8 255.7,53.7 254.3,56.5 212.4,124.9 211,125.6 209.6,124.9',
+  '59.7,139.4 59.7,138.2 60.8,137.6 107.9,137.6 108.6,137.7 109.3,138 109.9,138.4 110.4,139 133.1,175.8 134.5,175.8 159.5,138.9 160,138.4 160.6,137.9 161.3,137.7 162,137.6 202.5,137.6 203.5,138.2 203.5,139.4 149,225.7 147.3,228 145.3,230.1 143,231.9 140.5,233.4 137.8,234.5 135,235.3 132.1,235.6 129.2,235.6 126.4,235.2 123.6,234.4 120.9,233.2 118.4,231.7 116.2,229.9 114.2,227.8 112.5,225.4',
+].map((list) => list.split(' ').map((pair) => pair.split(',').map(Number)));
+const LOGO_DEPTH = [26, 26, -26]; // relief de chaque triangle, en unités du dessin
+const LOGO_CENTER = [128.8, 128.3];
+const LOGO_PERSPECTIVE = 1500;
+
+function projectLogo(rx, ry) {
+  const [cx, cy] = LOGO_CENTER;
+  const P = LOGO_PERSPECTIVE;
+  const sx = Math.sin(rx), cxr = Math.cos(rx), sy = Math.sin(ry), cyr = Math.cos(ry);
+  pieces.forEach((piece, i) => {
+    const z = LOGO_DEPTH[i];
+    const s = (P - z) / P; // au repos, le relief ne change pas la taille
+    let d = '';
+    for (const [x, y] of LOGO_POINTS[i]) {
+      const X = (x - cx) * s, Y = (y - cy) * s;
+      const X1 = X * cyr + z * sy, Z1 = -X * sy + z * cyr;
+      const Y2 = Y * cxr - Z1 * sx, Z2 = Y * sx + Z1 * cxr;
+      const f = P / (P - Z2);
+      d += (d ? 'L' : 'M') + (cx + X1 * f).toFixed(2) + ' ' + (cy + Y2 * f).toFixed(2);
+    }
+    piece.setAttribute('d', d + 'Z');
+  });
+}
+
+function liveMark() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const sheen = $('vSheen');
+  const tile = card.querySelector('.mark');
+  const TAU = Math.PI * 2;
+  const RAD = Math.PI / 180;
+  let start;
+  const frame = (now) => {
+    if (start === undefined) start = now;
+    const t = (now - start) / 1000;
+    const k = Math.min(1, t / 3);
+    const amp = k * k * (3 - 2 * k); // le mouvement s'installe en douceur
+    // Deux rythmes mêlés : le mouvement ne se répète jamais à l'identique.
+    const ry = amp * (13 * Math.sin(TAU * t / 11) + 3 * Math.sin(TAU * t / 4.7));
+    const rx = amp * 7 * Math.sin(TAU * t / 7.3);
+    projectLogo(rx * RAD, ry * RAD);
+    sheen.setAttribute('gradientTransform', `translate(${(ry * 6).toFixed(1)} ${(-rx * 3).toFixed(1)})`);
+    tile.style.setProperty('--lx', `${(50 + ry * 2.2).toFixed(1)}%`);
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
 /* ---------- Bouton ---------- */
 const ctaText = $('ctaText');
 function nudgeArrow(delay = 0) {
@@ -624,8 +714,9 @@ async function intro() {
     { opacity: 1, transform: 'none', filter: 'blur(0px)' },
   ], { duration: 640, easing: EASE.out, fill: 'backwards' });
 
-  // 2. Le logo se construit par ses trois triangles.
+  // 2. Le logo se construit par ses trois triangles, puis prend vie.
   buildLogo(200);
+  setTimeout(liveMark, 1000);
 
   // 3. La carte se déploie.
   const expandAt = 1000;
